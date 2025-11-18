@@ -40,6 +40,8 @@ jobs:
               '   a) Official music video (studio version) - PREFERRED\n' +
               '   b) Official live performance - if official music video not available\n' +
               '   c) High-quality unofficial video - only as last resort\n' +
+              '   IMPORTANT: Test each video in an iframe/embed to ensure it plays (Error 153 = embedding disabled)\n' +
+              '   Many major label videos have embedding restrictions - prefer indie/smaller label videos when possible\n' +
               '3. Create CSV file: input/' + filename + '_list.csv (columns: id, title, start)\n' +
               '4. REQUIRED - Generate HTML player file using this EXACT command:\n' +
               '   python -m power_hour.cli build-youtube-html --urls-csv input/' + filename + '_list.csv --output output/' + filename + '_power_hour.html --clip-seconds 60 --title-reveal-delay 20 --no-shuffle --default-start 15\n' +
