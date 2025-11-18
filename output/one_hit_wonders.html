@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Power Hour (YouTube)</title>
+    <style>
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; padding: 0; background: #111; color: #eee; }
+        header { padding: 12px 16px; background: #181818; position: sticky; top: 0; z-index: 2; }
+        .player-wrap { position: relative; width: 100%; max-width: 1280px; margin: 12px auto; }
+        .player-wrap::before { content: ''; display: block; width: 100%; padding-top: calc(100% * 9 / 16); }
+        #player { position: absolute; inset: 0; width: 100%; height: 100%; }
+        .title-blocker { position: absolute; bottom: 0; left: 0; right: 0; height: 60px; background: linear-gradient(to top, rgba(17,17,17,0.95) 0%, rgba(17,17,17,0.8) 50%, transparent 100%); pointer-events: none; z-index: 1; }
+        .overlay { position: absolute; left: 8px; top: 8px; background: rgba(0,0,0,0.6); color: #fff; padding: 6px 10px; border-radius: 6px; font-weight: 600; pointer-events: none; max-width: 95%; z-index: 2; }
+        .overlay .title { display: block; font-weight: 500; opacity: 0.9; font-size: 14px; margin-top: 2px; }
+        .overlay .title.hidden { display: none; }
+        .wrap { max-width: 1280px; margin: 0 auto; padding: 8px 16px; }
+        .btn { background: #2d6cdf; color: white; border: 0; padding: 8px 12px; border-radius: 6px; margin-right: 8px; cursor: pointer; }
+        .btn:disabled { opacity: 0.6; cursor: default; }
+        .meta { opacity: 0.8; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="wrap">
+            <button id="playBtn" class="btn">Play</button>
+            <button id="pauseBtn" class="btn">Pause</button>
+            <button id="prevBtn" class="btn">Prev</button>
+            <button id="nextBtn" class="btn">Next</button>
+            <span class="meta" id="status"></span>
+        </div>
+    </header>
+    <div class="wrap">
+        <div class="player-wrap">
+            <div id="player"></div>
+            <div class="title-blocker"></div>
+            <div class="overlay" id="overlay"></div>
+        </div>
+    </div>
+
+    <script>
+        const VIDEO_IDS = ['2H5uWRjFsGc','E1fzJ_AYajA','DL7-CKirWZE','_ElORM9O-0U','1ClCpfeIELw','wYsMjEeEg4g','xGytDsqkQY8','IeUhnbJHJks','NI6aOFI7hms','TDkhl-CgETg','VV1XWJN3nJo','Nntd2fgMUYw','X5jlTlUTWfQ','EkwD5rQ-_d4','8N-qO3sPMjc','ka9mCmx9Jhs','4XJxFAoiWSY','1umEXpGHc0E','acK0KH2uJGs','Clxtg2pFTQM','3qVPNONdF58','GihKLfVnflU','C2cMG33mWVY','sc5iTNVEOAg','MqKcUS2Npic','Sfg6-4mBs6Y','MW6E_TNgCsY','JngoQPzemb4','cHA-bTgeDoE','1IlAOK1DUdU','Fxb-xfeFDC8','FC3y9llDXuM','qT7fN2iETgA','q-9kPks0IfE','qBT3dBHlb2s','V2yy141q8HQ','RZD982yrmx4','_sj_U6vObUA','E2Oe5YKhzCE','NjNn4bbbgSw','NRtvqT_wMeY','ah5gAkna3jI','12bM1CqHoBY','Ln6WQqRDrCo','_m0bI82Rz_k','5WYhN90BfmM','xsJ4O-nSveg','5MzAqLgaqGw','o9mJ82x_l-E','HSmfigFo3r4','JgffRW1fKDk','0Uc3ZrmhDN4','wsdy_rct6uo','6NXnxTNIWkc','_ivt_N2Zcts','7Gx1Pv02w3Q','w0N4twy_lCY','Z-FPimCmbX8','KR_rJgRlCG4','Xz-UvQYAmbg'];
+        const VIDEO_TITLES = ['Chumbawamba - Tubthumping - Track 1','Len - Steal My Sunshine - Track 2','New Radicals - You Get What You Give - Track 3','Tal Bachman - She\u0027s So High - Track 4','Deep Blue Something - Breakfast at Tiffany\u0027s - Track 5','Harvey Danger - Flagpole Sitta - Track 6','Semisonic - Closing Time - Track 7','Marcy Playground - Sex and Candy - Track 8','The Cardigans - Lovefool - Track 9','Spacehog - In the Meantime - Track 10','Natalie Imbruglia - Torn - Track 11','Eagle-Eye Cherry - Save Tonight - Track 12','Fastball - The Way - Track 13','The Toadies - Possum Kingdom - Track 14','Sixpence None the Richer - Kiss Me - Track 15','Lisa Loeb - Stay (I Missed You) - Track 16','Primitive Radio Gods - Standing Outside a Broken Phone Booth - Track 17','The Verve Pipe - The Freshmen - Track 18','Better Than Ezra - Good - Track 19','Dishwalla - Counting Blue Cars - Track 20','Blind Melon - No Rain - Track 21','Duncan Sheik - Barely Breathing - Track 22','OMC - How Bizarre - Track 23','Lit - My Own Worst Enemy - Track 24','Sponge - Plowed - Track 25','Tonic - If You Could Only See - Track 26','Everclear - Santa Monica - Track 27','Stabbing Westward - Save Yourself - Track 28','Oleander - Why I\u0027m Here - Track 29','Fuel - Shimmer - Track 30','SR-71 - Right Now - Track 31','Wheatus - Teenage Dirtbag - Track 32','Blessid Union of Souls - I Believe - Track 33','The Rembrandts - I\u0027ll Be There for You - Track 34','Divine Comedy - National Express - Track 35','Eels - Novocaine for the Soul - Track 36','Silverchair - Tomorrow - Track 37','The Presidents of the USA - Lump - Track 38','Local H - Bound for the Floor - Track 39','Seven Mary Three - Cumbersome - Track 40','Soul Asylum - Runaway Train - Track 41','Gin Blossoms - Hey Jealousy - Track 42','Toad the Wet Sprocket - Walk on the Ocean - Track 43','Hootie & the Blowfish - Only Wanna Be with You - Track 44','Collective Soul - Shine - Track 45','Candlebox - Far Behind - Track 46','Live - Lightning Crashes - Track 47','Toadies - Away - Track 48','Filter - Hey Man Nice Shot - Track 49','Gravity Kills - Guilty - Track 50','Republica - Ready to Go - Track 51','Sublime - What I Got - Track 52','Spin Doctors - Two Princes - Track 53','4 Non Blondes - What\u0027s Up - Track 54','Meredith Brooks - Bitch - Track 55','Joan Osborne - One of Us - Track 56','Ini Kamoze - Here Comes the Hotstepper - Track 57','Tag Team - Whoomp! There It Is - Track 58','69 Boyz - Tootsee Roll - Track 59','Quad City DJ\u0027s - C\u0027mon N\u0027 Ride It - Track 60'];
+        const CLIP_SECONDS = 60.000;
+        const VIDEO_STARTS = [15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0];
+        const TITLE_REVEAL_DELAY = 20.000;
+        let currentIndex = 0;
+        let player = null;
+        let timer = null;
+        let titleTimer = null;
+        let checkInterval = null;
+
+        function updateStatus(showTitle = false) {
+            const s = document.getElementById('status');
+            const total = VIDEO_IDS.length;
+            const cur = currentIndex + 1;
+            const t = (VIDEO_TITLES[currentIndex] || '').trim();
+            s.textContent = `Clip ${cur} / ${total} (each ${Math.round(CLIP_SECONDS)}s)${showTitle && t ? ' — ' + t : ''}`;
+            const ov = document.getElementById('overlay');
+            ov.innerHTML = `<div># ${cur} / ${total}</div>` + (t ? `<span class="title${showTitle ? '' : ' hidden'}">${t}</span>` : '');
+        }
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                videoId: VIDEO_IDS[currentIndex],
+                playerVars: {
+                    rel: 0,
+                    modestbranding: 1,
+                    controls: 1,
+                    fs: 1
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        function checkPlaybackTime() {
+            if (!player || !player.getCurrentTime) return;
+            try {
+                const currentTime = player.getCurrentTime();
+                const startTime = Number(VIDEO_STARTS[currentIndex] || 0);
+                const elapsed = currentTime - startTime;
+                
+                // Check if we've played for the clip duration
+                if (elapsed >= CLIP_SECONDS) {
+                    nextClip();
+                }
+                
+                // Show title after delay
+                if (TITLE_REVEAL_DELAY > 0 && elapsed >= TITLE_REVEAL_DELAY && elapsed < TITLE_REVEAL_DELAY + 0.5) {
+                    updateStatus(true);
+                }
+            } catch(e) {
+                console.warn('Error checking playback time:', e);
+            }
+        }
+
+        function playCurrent() {
+            if (!player) return;
+            try { player.stopVideo(); } catch(e) {}
+            const start = Number(VIDEO_STARTS[currentIndex] || 0);
+            player.loadVideoById({videoId: VIDEO_IDS[currentIndex], startSeconds: start});
+            player.playVideo();
+            clearTimers();
+            const showTitleImmediately = TITLE_REVEAL_DELAY <= 0;
+            updateStatus(showTitleImmediately);
+            // Check playback time every 500ms
+            checkInterval = setInterval(checkPlaybackTime, 500);
+        }
+
+        function clearTimers() {
+            if (timer) { clearTimeout(timer); timer = null; }
+            if (titleTimer) { clearTimeout(titleTimer); titleTimer = null; }
+            if (checkInterval) { clearInterval(checkInterval); checkInterval = null; }
+        }
+
+        function nextClip() {
+            clearTimers();
+            currentIndex = (currentIndex + 1) % VIDEO_IDS.length;
+            playCurrent();
+        }
+
+        function prevClip() {
+            clearTimers();
+            currentIndex = (currentIndex - 1 + VIDEO_IDS.length) % VIDEO_IDS.length;
+            playCurrent();
+        }
+
+        function onPlayerReady() {
+            updateStatus(TITLE_REVEAL_DELAY <= 0);
+        }
+
+        function onPlayerStateChange(ev) {
+            // No-op; we use timer for advancing
+        }
+
+        document.getElementById('playBtn').addEventListener('click', () => {
+            playCurrent();
+        });
+        document.getElementById('pauseBtn').addEventListener('click', () => {
+            clearTimers();
+            if (player) player.pauseVideo();
+        });
+        document.getElementById('nextBtn').addEventListener('click', nextClip);
+        document.getElementById('prevBtn').addEventListener('click', prevClip);
+
+        // Load the IFrame Player API
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        document.body.appendChild(tag);
+    </script>
+</body>
+</html>

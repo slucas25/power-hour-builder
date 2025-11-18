@@ -34,17 +34,20 @@ jobs:
               'Theme: ' + theme + '\n\n' +
               'Sample tracks:\n' + samplesList + '\n\n' +
               'Task: Create a 60-song power hour for this theme. Check the full issue description above for all details.\n\n' +
-              'Steps:\n' +
+              'CRITICAL STEPS (ALL REQUIRED):\n' +
               '1. Research 60 songs matching this theme\n' +
               '2. Find YouTube videos with this priority order:\n' +
               '   a) Official music video (studio version) - PREFERRED\n' +
               '   b) Official live performance - if official music video not available\n' +
               '   c) High-quality unofficial video - only as last resort\n' +
-              '3. Create CSV: input/' + filename + '_list.csv (columns: id, title, start)\n' +
-              '4. Generate HTML: python -m power_hour.cli build-youtube-html --urls-csv input/' + filename + '_list.csv --output output/' + filename + '_power_hour.html --clip-seconds 60 --title-reveal-delay 20 --no-shuffle --default-start 15\n' +
-              '5. Run tests: pytest tests/\n' +
-              '6. Create PR titled "Add ' + theme + ' Power Hour Playlist" linked to issue #' + issueNumber + '\n' +
-              '7. Close this issue when PR merges\n\n' +
+              '3. Create CSV file: input/' + filename + '_list.csv (columns: id, title, start)\n' +
+              '4. REQUIRED - Generate HTML player file using this EXACT command:\n' +
+              '   python -m power_hour.cli build-youtube-html --urls-csv input/' + filename + '_list.csv --output output/' + filename + '_power_hour.html --clip-seconds 60 --title-reveal-delay 20 --no-shuffle --default-start 15\n' +
+              '5. Verify HTML file exists: ls -la output/' + filename + '_power_hour.html\n' +
+              '6. Run tests: pytest tests/\n' +
+              '7. Commit BOTH files: git add input/' + filename + '_list.csv output/' + filename + '_power_hour.html\n' +
+              '8. Create PR titled "Add ' + theme + ' Power Hour Playlist" linked to issue #' + issueNumber + '\n' +
+              '9. Close this issue when PR merges\n\n' +
               'Important: NO &start_radio=1 URLs. Use curl to verify each video. Follow README.md verification steps.';
             
             await github.rest.issues.createComment({

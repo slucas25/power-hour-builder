@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Power Hour (YouTube)</title>
+    <style>
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; padding: 0; background: #111; color: #eee; }
+        header { padding: 12px 16px; background: #181818; position: sticky; top: 0; z-index: 2; }
+        .player-wrap { position: relative; width: 100%; max-width: 1280px; margin: 12px auto; }
+        .player-wrap::before { content: ''; display: block; width: 100%; padding-top: calc(100% * 9 / 16); }
+        #player { position: absolute; inset: 0; width: 100%; height: 100%; }
+        .title-blocker { position: absolute; bottom: 0; left: 0; right: 0; height: 60px; background: linear-gradient(to top, rgba(17,17,17,0.95) 0%, rgba(17,17,17,0.8) 50%, transparent 100%); pointer-events: none; z-index: 1; }
+        .overlay { position: absolute; left: 8px; top: 8px; background: rgba(0,0,0,0.6); color: #fff; padding: 6px 10px; border-radius: 6px; font-weight: 600; pointer-events: none; max-width: 95%; z-index: 2; }
+        .overlay .title { display: block; font-weight: 500; opacity: 0.9; font-size: 14px; margin-top: 2px; }
+        .overlay .title.hidden { display: none; }
+        .wrap { max-width: 1280px; margin: 0 auto; padding: 8px 16px; }
+        .btn { background: #2d6cdf; color: white; border: 0; padding: 8px 12px; border-radius: 6px; margin-right: 8px; cursor: pointer; }
+        .btn:disabled { opacity: 0.6; cursor: default; }
+        .meta { opacity: 0.8; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="wrap">
+            <button id="playBtn" class="btn">Play</button>
+            <button id="pauseBtn" class="btn">Pause</button>
+            <button id="prevBtn" class="btn">Prev</button>
+            <button id="nextBtn" class="btn">Next</button>
+            <span class="meta" id="status"></span>
+        </div>
+    </header>
+    <div class="wrap">
+        <div class="player-wrap">
+            <div id="player"></div>
+            <div class="title-blocker"></div>
+            <div class="overlay" id="overlay"></div>
+        </div>
+    </div>
+
+    <script>
+        const VIDEO_IDS = ['AJUpHxlJUNQ','NWKf2VhnoHE','91rHFP0OtTE','zTuD8k3JvxQ','sT1DdO3SISg','aIr_IXXLZ8Q','3aGaGD4CitM','sQOOgQtLI4M','IPTHlmhtg8s','SCx_uiSdC_c','yun1IlBnDmY','vujMy_r5NsY','RDHA3JiXUuU','19y8V_WCtTI','54ioi2qL5Z4','xUgI2h35Pcc','udIHm_b7-yw','OgodBNA3hIg','6JA25BIxgtk','gKvxG4aD9x8','JCO92__Zn-8','7dUwM8x4Thg','0HXnRKp3yFo','Zs7LaACDWD8','OGKRr0NmgFM','JbOlo0Yr_Ls','6ncNU36sSwo','L5cGLC61NkY','YglMtFNtAyU','z6RqPGosZ-U','4Q1Kh9JkACc','gCjufvdq_1c','j2ybKzN869A','L0oeqAQ1qE8','2e5Q8OSPp-M','QpLxcYYfq9s','9346rQ1d8ik','HGPzJs1WK88','dabvuLk5RTU','SUKOPD0yVj4','lna5ZKbZUqU','2TzdnH3GZ2o','xFvz1JQAPgQ','4KGzXUmbyiQ','ybExfDHg1i0','Jv6C-ZqYcws','QTTgpTeb0Z8','AVtskhcGOtc','4ZkEob55qso','-hfYgyNgljs','MfH3yRVJh8Q','gIsnb1TKYjE','FyYMzEplnfU','F9il_iQ8bDM','eGELjc66kFs','PVyS9JwtFoQ','l6ER2_4q5KQ','K79LRBXJOqM','SDTSUwIZdMk','oFD88EyZ80E'];
+        const VIDEO_TITLES = ['Nirvana - Drain You','Pearl Jam - Porch','Soundgarden - 4th of July','Alice in Chains - Them Bones','Stone Temple Pilots - Creep','Nirvana - Aneurysm','Pearl Jam - Leash','Soundgarden - Hands All Over','Alice in Chains - Rain When I Die','Stone Temple Pilots - Dead and Bloated','Mudhoney - Suck You Dry','Screaming Trees - Shadow of the Season','Tad - Stumblin Man','Melvins - Revolve','Green River - Swallow My Pride','Nirvana - Negative Creep','Pearl Jam - Deep','Soundgarden - Dusty','Alice in Chains - We Die Young','Stone Temple Pilots - Crackerman','Bush - Mouth','Silverchair - Findaway','Candlebox - No Sense','Live - Shit Towne','Sponge - Plowed','Mad Season - Lifeless Dead','Temple of the Dog - Pushin Forward Back','Mother Love Bone - Stardog Champion','Skin Yard - Throb','L7 - Shitlist','Hole - Asking For It','Babes in Toyland - Bruise Violet','7 Year Bitch - Dead Men Don\u0027t Rape','Bikini Kill - Rebel Girl','Lunachicks - Drop Dead','The Jesus Lizard - Mouth Breather','Helmet - In the Meantime','Quicksand - Fazer','Failure - Macaque','Hum - Iron Clad Lou','Seaweed - Go Your Own Way','Superchunk - Slack Motherfucker','Jawbox - Savory','Jawbreaker - Boxcar','Dinosaur Jr - Get Me','Sebadoh - Brand New Love','Pavement - Cut Your Hair','Built to Spill - Car','Archers of Loaf - Web in Front','Polvo - Thermal Treasure','Swervedriver - Duel','Ride - Leave Them All Behind','My Bloody Valentine - Only Shallow','The Breeders - Divine Hammer','Throwing Muses - Dizzy','Pixies - Debaser','Afghan Whigs - Gentlemen','Smashing Pumpkins - Geek USA','Sonic Youth - Kool Thing','Meat Puppets - Backwater'];
+        const CLIP_SECONDS = 60.000;
+        const VIDEO_STARTS = [15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0];
+        const TITLE_REVEAL_DELAY = 20.000;
+        let currentIndex = 0;
+        let player = null;
+        let timer = null;
+        let titleTimer = null;
+        let checkInterval = null;
+
+        function updateStatus(showTitle = false) {
+            const s = document.getElementById('status');
+            const total = VIDEO_IDS.length;
+            const cur = currentIndex + 1;
+            const t = (VIDEO_TITLES[currentIndex] || '').trim();
+            s.textContent = `Clip ${cur} / ${total} (each ${Math.round(CLIP_SECONDS)}s)${showTitle && t ? ' — ' + t : ''}`;
+            const ov = document.getElementById('overlay');
+            ov.innerHTML = `<div># ${cur} / ${total}</div>` + (t ? `<span class="title${showTitle ? '' : ' hidden'}">${t}</span>` : '');
+        }
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                videoId: VIDEO_IDS[currentIndex],
+                playerVars: {
+                    rel: 0,
+                    modestbranding: 1,
+                    controls: 1,
+                    fs: 1
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        function checkPlaybackTime() {
+            if (!player || !player.getCurrentTime) return;
+            try {
+                const currentTime = player.getCurrentTime();
+                const startTime = Number(VIDEO_STARTS[currentIndex] || 0);
+                const elapsed = currentTime - startTime;
+                
+                // Check if we've played for the clip duration
+                if (elapsed >= CLIP_SECONDS) {
+                    nextClip();
+                }
+                
+                // Show title after delay
+                if (TITLE_REVEAL_DELAY > 0 && elapsed >= TITLE_REVEAL_DELAY && elapsed < TITLE_REVEAL_DELAY + 0.5) {
+                    updateStatus(true);
+                }
+            } catch(e) {
+                console.warn('Error checking playback time:', e);
+            }
+        }
+
+        function playCurrent() {
+            if (!player) return;
+            try { player.stopVideo(); } catch(e) {}
+            const start = Number(VIDEO_STARTS[currentIndex] || 0);
+            player.loadVideoById({videoId: VIDEO_IDS[currentIndex], startSeconds: start});
+            player.playVideo();
+            clearTimers();
+            const showTitleImmediately = TITLE_REVEAL_DELAY <= 0;
+            updateStatus(showTitleImmediately);
+            // Check playback time every 500ms
+            checkInterval = setInterval(checkPlaybackTime, 500);
+        }
+
+        function clearTimers() {
+            if (timer) { clearTimeout(timer); timer = null; }
+            if (titleTimer) { clearTimeout(titleTimer); titleTimer = null; }
+            if (checkInterval) { clearInterval(checkInterval); checkInterval = null; }
+        }
+
+        function nextClip() {
+            clearTimers();
+            currentIndex = (currentIndex + 1) % VIDEO_IDS.length;
+            playCurrent();
+        }
+
+        function prevClip() {
+            clearTimers();
+            currentIndex = (currentIndex - 1 + VIDEO_IDS.length) % VIDEO_IDS.length;
+            playCurrent();
+        }
+
+        function onPlayerReady() {
+            updateStatus(TITLE_REVEAL_DELAY <= 0);
+        }
+
+        function onPlayerStateChange(ev) {
+            // No-op; we use timer for advancing
+        }
+
+        document.getElementById('playBtn').addEventListener('click', () => {
+            playCurrent();
+        });
+        document.getElementById('pauseBtn').addEventListener('click', () => {
+            clearTimers();
+            if (player) player.pauseVideo();
+        });
+        document.getElementById('nextBtn').addEventListener('click', nextClip);
+        document.getElementById('prevBtn').addEventListener('click', prevClip);
+
+        // Load the IFrame Player API
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        document.body.appendChild(tag);
+    </script>
+</body>
+</html>

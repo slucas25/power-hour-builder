@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Power Hour (YouTube)</title>
+    <style>
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; padding: 0; background: #111; color: #eee; }
+        header { padding: 12px 16px; background: #181818; position: sticky; top: 0; z-index: 2; }
+        .player-wrap { position: relative; width: 100%; max-width: 1280px; margin: 12px auto; }
+        .player-wrap::before { content: ''; display: block; width: 100%; padding-top: calc(100% * 9 / 16); }
+        #player { position: absolute; inset: 0; width: 100%; height: 100%; }
+        .overlay { position: absolute; left: 8px; top: 8px; background: rgba(0,0,0,0.6); color: #fff; padding: 6px 10px; border-radius: 6px; font-weight: 600; pointer-events: none; max-width: 95%; }
+        .overlay .title { display: block; font-weight: 500; opacity: 0.9; font-size: 14px; margin-top: 2px; }
+        .wrap { max-width: 1280px; margin: 0 auto; padding: 8px 16px; }
+        .btn { background: #2d6cdf; color: white; border: 0; padding: 8px 12px; border-radius: 6px; margin-right: 8px; cursor: pointer; }
+        .btn:disabled { opacity: 0.6; cursor: default; }
+        .meta { opacity: 0.8; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="wrap">
+            <button id="playBtn" class="btn">Play</button>
+            <button id="pauseBtn" class="btn">Pause</button>
+            <button id="prevBtn" class="btn">Prev</button>
+            <button id="nextBtn" class="btn">Next</button>
+            <span class="meta" id="status"></span>
+        </div>
+    </header>
+    <div class="wrap">
+        <div class="player-wrap">
+            <div id="player"></div>
+            <div class="overlay" id="overlay"></div>
+        </div>
+    </div>
+
+    <script>
+        const VIDEO_IDS = ['oKOtzIo-uYw','7Xf-Lesrkuc','YgSPaXgAdzE','HAkHqYlqops','bx1Bh8ZvH84','TR3Vdo5etCQ','8WEtxJ4-sh4','SQCSxqScSVQ','WQnAxOQxQIU','_CL6n0FJZpk','Jne9t8sHpUc','mzJj5-lubeM'];
+        const VIDEO_TITLES = ['Fugees - Killing Me Softly With His Song - Track 6','rain - Drops of Jupiter - Track 2','Beck - Loser - Track 5','Matcbox Twenty - Push - Track 1','Oasis - Wonderwall - Track 9','No Doubt - Dont Speak - Track 3','TLC - Waterfalls - Tack 10','Coolio - Gangsta\u0027s Paradise - Track 7','Savage Garden - Truly Madly Deeply - Track 11','Dr. Dre - Still D.R.E. ft. Snoop Dogg - Track 12','Alanis Morissette - Ironic - Track 4','Red Hot Chili Peppers - Scar Tissue - Track 8'];
+        const CLIP_SECONDS = 60.000;
+        const VIDEO_STARTS = [0.0,32.0,0.0,14.0,28.0,33.0,15.0,19.0,17.0,21.0,35.0,4.0];
+        let currentIndex = 0;
+        let player = null;
+        let timer = null;
+
+        function updateStatus() {
+            const s = document.getElementById('status');
+            const total = VIDEO_IDS.length;
+            const cur = currentIndex + 1;
+            const t = (VIDEO_TITLES[currentIndex] || '').trim();
+            s.textContent = `Clip ${cur} / ${total} (each ${Math.round(CLIP_SECONDS)}s)${t ? ' — ' + t : ''}`;
+            const ov = document.getElementById('overlay');
+            ov.innerHTML = `<div># ${cur} / ${total}</div>` + (t ? `<span class="title">${t}</span>` : '');
+        }
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                videoId: VIDEO_IDS[currentIndex],
+                playerVars: {
+                    rel: 0,
+                    modestbranding: 1,
+                    controls: 1,
+                    fs: 1
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        function playCurrent() {
+            if (!player) return;
+            try { player.stopVideo(); } catch(e) {}
+            const start = Number(VIDEO_STARTS[currentIndex] || 0);
+            player.loadVideoById({videoId: VIDEO_IDS[currentIndex], startSeconds: start});
+            player.playVideo();
+            clearTimer();
+            timer = setTimeout(nextClip, CLIP_SECONDS * 1000);
+            updateStatus();
+        }
+
+        function clearTimer() {
+            if (timer) { clearTimeout(timer); timer = null; }
+        }
+
+        function nextClip() {
+            clearTimer();
+            currentIndex = (currentIndex + 1) % VIDEO_IDS.length;
+            playCurrent();
+        }
+
+        function prevClip() {
+            clearTimer();
+            currentIndex = (currentIndex - 1 + VIDEO_IDS.length) % VIDEO_IDS.length;
+            playCurrent();
+        }
+
+        function onPlayerReady() {
+            updateStatus();
+        }
+
+        function onPlayerStateChange(ev) {
+            // No-op; we use timer for advancing
+        }
+
+        document.getElementById('playBtn').addEventListener('click', () => {
+            playCurrent();
+        });
+        document.getElementById('pauseBtn').addEventListener('click', () => {
+            clearTimer();
+            if (player) player.pauseVideo();
+        });
+        document.getElementById('nextBtn').addEventListener('click', nextClip);
+        document.getElementById('prevBtn').addEventListener('click', prevClip);
+
+        // Load the IFrame Player API
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        document.body.appendChild(tag);
+    </script>
+</body>
+</html>
