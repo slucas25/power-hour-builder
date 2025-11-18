@@ -1,0 +1,81 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Triggers on version tags like v1.0.0, v1.2.3, etc.
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for changelog generation
+      
+      - name: Get tag name
+        id: tag
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      
+      - name: Generate release notes
+        id: notes
+        run: |
+          # Get previous tag
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          
+          # Generate changelog
+          if [ -z "$PREVIOUS_TAG" ]; then
+            # First release - show all commits
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" --no-merges)
+          else
+            # Show commits since last tag
+            CHANGELOG=$(git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges)
+          fi
+          
+          # Create release notes
+          cat << EOF > release_notes.md
+          ## What's Changed
+          
+          ${CHANGELOG}
+          
+          ## Installation
+          
+          \`\`\`bash
+          git clone https://github.com/${{ github.repository }}.git
+          cd power-hour-builder
+          python3 -m venv .venv
+          source .venv/bin/activate
+          pip install -r requirements.txt
+          \`\`\`
+          
+          ## Quick Start
+          
+          Build a YouTube power hour:
+          \`\`\`bash
+          python -m power_hour.cli build-youtube-html \\
+            --urls-csv ./input/90s_grunge_list.csv \\
+            --clip-seconds 60 \\
+            --title-reveal-delay 20 \\
+            --output ./output/power_hour.html
+          \`\`\`
+          
+          See [README.md](https://github.com/${{ github.repository }}/blob/main/README.md) for full documentation.
+          EOF
+          
+          echo "notes_file=release_notes.md" >> $GITHUB_OUTPUT
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: Release ${{ steps.tag.outputs.tag }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
