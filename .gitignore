@@ -1,0 +1,34 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.py[cod]
+*$py.class
+*.so
+
+# Output
+output/*.mp4
+output/*.html
+*.temp-audio.m4a
+
+# Logs
+*.log
+nohup.out
+
+# Temporary files
+*_old.csv
+*_verified.csv
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Root level text/csv files (keep organized ones in input/)
+/*.txt
+/*.csv
