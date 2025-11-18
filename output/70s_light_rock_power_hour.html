@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Power Hour (YouTube)</title>
+    <style>
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; padding: 0; background: #111; color: #eee; }
+        header { padding: 12px 16px; background: #181818; position: sticky; top: 0; z-index: 2; }
+        .player-wrap { position: relative; width: 100%; max-width: 1280px; margin: 12px auto; }
+        .player-wrap::before { content: ''; display: block; width: 100%; padding-top: calc(100% * 9 / 16); }
+        #player { position: absolute; inset: 0; width: 100%; height: 100%; }
+        .title-blocker { position: absolute; bottom: 0; left: 0; right: 0; height: 60px; background: linear-gradient(to top, rgba(17,17,17,0.95) 0%, rgba(17,17,17,0.8) 50%, transparent 100%); pointer-events: none; z-index: 1; }
+        .overlay { position: absolute; left: 8px; top: 8px; background: rgba(0,0,0,0.6); color: #fff; padding: 6px 10px; border-radius: 6px; font-weight: 600; pointer-events: none; max-width: 95%; z-index: 2; }
+        .overlay .title { display: block; font-weight: 500; opacity: 0.9; font-size: 14px; margin-top: 2px; }
+        .overlay .title.hidden { display: none; }
+        .wrap { max-width: 1280px; margin: 0 auto; padding: 8px 16px; }
+        .btn { background: #2d6cdf; color: white; border: 0; padding: 8px 12px; border-radius: 6px; margin-right: 8px; cursor: pointer; }
+        .btn:disabled { opacity: 0.6; cursor: default; }
+        .meta { opacity: 0.8; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="wrap">
+            <button id="playBtn" class="btn">Play</button>
+            <button id="pauseBtn" class="btn">Pause</button>
+            <button id="prevBtn" class="btn">Prev</button>
+            <button id="nextBtn" class="btn">Next</button>
+            <span class="meta" id="status"></span>
+        </div>
+    </header>
+    <div class="wrap">
+        <div class="player-wrap">
+            <div id="player"></div>
+            <div class="title-blocker"></div>
+            <div class="overlay" id="overlay"></div>
+        </div>
+    </div>
+
+    <script>
+        const VIDEO_IDS = ['4G-YQA_bsOU','ozl3L9fhKtE','5igDtWadYms','na47wMFfQCo','n-cK70DXsSA','DVx8L7a3MuE','A1jeVdUo1-I','JWdZEumNRmI','GQQbjpomexo','Q29sOLG8xGE','qKYQNtF11eg','HaA3YZ6QdJU','yYcyacLRPNs','0IvatagnV_M','NmEyGiaqm7k','pvUjhYnCiIk','UuUVgKT4roQ','Ru2tsT32pHA','lakFEx_9cT4','Fo6aKnRnBxM','-9_d-sFhmRM','yZ_X6DRybJk','STugQ0X1NoI','2k1RUGWkf9o','ImlDHQkPf8Q','9PnXcP8ZI7M','Ak_MTXQALa0','hyRbhTUc6aI','YGAeI5KODLA','nZrRS261Edw','UfZWp-hGCdA','OudI2JPhEqQ','Pc3OnSQc48s','d8_fLu2yrP4','VkKxmnrRVHo','EbD7lfrsY2s','mQZmCJUSC6g','1uztRCOFYyc','RtX5xDzaMro','obC0MFHWJ0A','j_v4Eo4aRVI','xZKuzwPOefs','8dnUv3DUP4E','AvGpvQbkccE','EVcpKjXYa5c','dYEpFJhuu1E','4gibSb1_GGw','1IBdZ645S-o','4FDcTyyXQb8','MvXfzewXzVI','Vo_GMMLULXw','wCWVuCCWqzQ','_bna2ni6h4c','iq2TxnlWunw','6s2zm_crkVc','Z6qnRS36EgE','ASGgn8bNQuA','_21cZe2eO_I','lKcpodt0YCU','kySY1rR8_Nk'];
+        const VIDEO_TITLES = ['Simon & Garfunkel - Bridge Over Troubled Water','Fleetwood Mac - Go Your Own Way','Eagles - Take It Easy','America - A Horse With No Name','Bread - If','Looking Glass - Brandy You\u0027re a Fine Girl','Ambrosia - Holdin On To Yesterday','Air Supply - All Out of Love','Seals and Crofts - Summer Breeze','Jim Croce - Time in a Bottle','Doobie Brothers - What a Fool Believes','Billy Joel - Just the Way You Are','Elton John - Tiny Dancer','America - Ventura Highway','Player - Baby Come Back','Orleans - Still the One','England Dan John Ford Coley - I\u0027d Really Love to See You Tonight','Bertie Higgins - Key Largo','Firefall - You Are the Woman','Gerry Rafferty - Baker Street','Chicago - If You Leave Me Now','Pablo Cruise - Love Will Find a Way','10cc - I\u0027m Not in Love','Toto - I Won\u0027t Hold You Back','Dan Fogelberg - Longer','Christopher Cross - Sailing','Al Stewart - Year of the Cat','Little River Band - Reminiscing','Rupert Holmes - Escape Pina Colada Song','Boz Scaggs - Lido Shuffle','Steely Dan - Rikki Don\u0027t Lose That Number','Bread - Make It With You','Michael Martin Murphey - Wildfire','Roberta Flack - The First Time Ever I Saw Your Face','Carole King - It\u0027s Too Late','James Taylor - Fire and Rain','Carly Simon - You\u0027re So Vain','Stephen Bishop - On and On','Cat Stevens - Wild World','Leo Sayer - When I Need You','Dr Hook - Sharing the Night Together','Gary Wright - Dream Weaver','Harry Nilsson - Without You','Barry Manilow - Mandy','Three Dog Night - Joy to the World','Hall and Oates - Sara Smile','America - Sister Golden Hair','Gordon Lightfoot - Sundown','Loggins and Messina - Danny\u0027s Song','Doobie Brothers - It Keeps You Runnin','Ace - How Long','Sanford Townsend Band - Smoke From a Distant Fire','Maxine Nightingale - Right Back Where We Started From','Andrew Gold - Lonely Boy','Nick Gilder - Hot Child in the City','Smokie - Living Next Door to Alice','Pilot - Magic','Bread - Everything I Own','Melanie - Brand New Key','Reunion - Life Is a Rock But the Radio Rolled Me'];
+        const CLIP_SECONDS = 60.000;
+        const VIDEO_STARTS = [15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0];
+        const TITLE_REVEAL_DELAY = 20.000;
+        let currentIndex = 0;
+        let player = null;
+        let timer = null;
+        let titleTimer = null;
+        let checkInterval = null;
+
+        function updateStatus(showTitle = false) {
+            const s = document.getElementById('status');
+            const total = VIDEO_IDS.length;
+            const cur = currentIndex + 1;
+            const t = (VIDEO_TITLES[currentIndex] || '').trim();
+            s.textContent = `Clip ${cur} / ${total} (each ${Math.round(CLIP_SECONDS)}s)${showTitle && t ? ' — ' + t : ''}`;
+            const ov = document.getElementById('overlay');
+            ov.innerHTML = `<div># ${cur} / ${total}</div>` + (t ? `<span class="title${showTitle ? '' : ' hidden'}">${t}</span>` : '');
+        }
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                videoId: VIDEO_IDS[currentIndex],
+                playerVars: {
+                    rel: 0,
+                    modestbranding: 1,
+                    controls: 1,
+                    fs: 1
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        function checkPlaybackTime() {
+            if (!player || !player.getCurrentTime) return;
+            try {
+                const currentTime = player.getCurrentTime();
+                const startTime = Number(VIDEO_STARTS[currentIndex] || 0);
+                const elapsed = currentTime - startTime;
+                
+                // Check if we've played for the clip duration
+                if (elapsed >= CLIP_SECONDS) {
+                    nextClip();
+                }
+                
+                // Show title after delay
+                if (TITLE_REVEAL_DELAY > 0 && elapsed >= TITLE_REVEAL_DELAY && elapsed < TITLE_REVEAL_DELAY + 0.5) {
+                    updateStatus(true);
+                }
+            } catch(e) {
+                console.warn('Error checking playback time:', e);
+            }
+        }
+
+        function playCurrent() {
+            if (!player) return;
+            try { player.stopVideo(); } catch(e) {}
+            const start = Number(VIDEO_STARTS[currentIndex] || 0);
+            player.loadVideoById({videoId: VIDEO_IDS[currentIndex], startSeconds: start});
+            player.playVideo();
+            clearTimers();
+            const showTitleImmediately = TITLE_REVEAL_DELAY <= 0;
+            updateStatus(showTitleImmediately);
+            // Check playback time every 500ms
+            checkInterval = setInterval(checkPlaybackTime, 500);
+        }
+
+        function clearTimers() {
+            if (timer) { clearTimeout(timer); timer = null; }
+            if (titleTimer) { clearTimeout(titleTimer); titleTimer = null; }
+            if (checkInterval) { clearInterval(checkInterval); checkInterval = null; }
+        }
+
+        function nextClip() {
+            clearTimers();
+            currentIndex = (currentIndex + 1) % VIDEO_IDS.length;
+            playCurrent();
+        }
+
+        function prevClip() {
+            clearTimers();
+            currentIndex = (currentIndex - 1 + VIDEO_IDS.length) % VIDEO_IDS.length;
+            playCurrent();
+        }
+
+        function onPlayerReady() {
+            updateStatus(TITLE_REVEAL_DELAY <= 0);
+        }
+
+        function onPlayerStateChange(ev) {
+            // No-op; we use timer for advancing
+        }
+
+        document.getElementById('playBtn').addEventListener('click', () => {
+            playCurrent();
+        });
+        document.getElementById('pauseBtn').addEventListener('click', () => {
+            clearTimers();
+            if (player) player.pauseVideo();
+        });
+        document.getElementById('nextBtn').addEventListener('click', nextClip);
+        document.getElementById('prevBtn').addEventListener('click', prevClip);
+
+        // Load the IFrame Player API
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        document.body.appendChild(tag);
+    </script>
+</body>
+</html>

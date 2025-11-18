@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Preview YouTube CSV</title>
+        <style>
+            body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; padding: 0; background: #111; color: #eee; }
+            header { padding: 12px 16px; background: #181818; position: sticky; top: 0; z-index: 2; }
+            .wrap { max-width: 1280px; margin: 0 auto; padding: 8px 16px; }
+            .player-wrap { position: relative; width: 100%; max-width: 1280px; margin: 12px auto; }
+            .player-wrap::before { content: ''; display: block; width: 100%; padding-top: calc(100% * 9 / 16); }
+            #player { position: absolute; inset: 0; width: 100%; height: 100%; }
+            .row { margin-top: 8px; }
+            .btn { background: #2d6cdf; color: white; border: 0; padding: 8px 12px; border-radius: 6px; margin-right: 8px; cursor: pointer; }
+            .btn.alt { background: #444; }
+            .status { opacity: 0.9; font-size: 14px; margin-left: 8px; }
+            .overlay { position: absolute; left: 8px; top: 8px; background: rgba(0,0,0,0.6); color: #fff; padding: 6px 10px; border-radius: 6px; font-weight: 600; pointer-events: none; max-width: 95%; }
+            .overlay .title { display: block; font-weight: 500; opacity: 0.9; font-size: 14px; margin-top: 2px; }
+            .meta-line { margin-top: 6px; font-size: 14px; opacity: 0.9; }
+            input[type=number] { width: 90px; }
+        </style>
+    </head>
+    <body>
+        <header>
+            <div class="wrap">
+                <button id="prevBtn" class="btn">Prev</button>
+                <button id="nextBtn" class="btn">Next</button>
+                <button id="playBtn" class="btn">Play</button>
+                <button id="pauseBtn" class="btn">Pause</button>
+                <button id="back5Btn" class="btn alt">-5s</button>
+                <button id="fwd5Btn" class="btn alt">+5s</button>
+                <span class="status" id="status"></span>
+            </div>
+        </header>
+        <div class="wrap">
+            <div class="player-wrap">
+                <div id="player"></div>
+                <div class="overlay" id="overlay"></div>
+            </div>
+            <div class="row">
+                <button id="setChorusBtn" class="btn">Set Chorus @ Current</button>
+                <button id="clearChorusBtn" class="btn alt">Clear Chorus</button>
+                <button id="setStartBtn" class="btn">Set Start @ Current</button>
+                <button id="clearStartBtn" class="btn alt">Clear Start</button>
+                <button id="downloadBtn" class="btn">Download CSV</button>
+                <span class="status" id="info"></span>
+            </div>
+        </div>
+
+        <script>
+            const VIDEO_IDS = ['HAkHqYlqops','7Xf-Lesrkuc','TR3Vdo5etCQ','No Doubt - Dont Speak - Track 3','Jne9t8sHpUc','YgSPaXgAdzE','oKOtzIo-uYw','SQCSxqScSVQ','mzJj5-lubeM','bx1Bh8ZvH84','8WEtxJ4-sh4','WQnAxOQxQIU','_CL6n0FJZpk'];
+            const VIDEO_TITLES = ['Matcbox Twenty - Push - Track 1','','','','Alanis Morissette - Ironic - Track 4','Beck - Loser - Track 5','Fugees - Killing Me Softly With His Song - Track 6','Coolio - Gangsta\u0027s Paradise - Track 7','Red Hot Chili Peppers - Scar Tissue - Track 8','Oasis - Wonderwall - Track 9','TLC - Waterfalls - Tack 10','Savage Garden - Truly Madly Deeply - Track 11','Dr. Dre - Still D.R.E. ft. Snoop Dogg - Track 12'];
+            const VIDEO_GENRES = ['','','','','','','','','','','','',''];
+            const VIDEO_CHORUS = [null,null,null,null,null,null,null,null,null,null,null,null,null];
+            const VIDEO_STARTS = [null,null,null,null,null,null,null,null,null,null,null,null,null];
+            let currentIndex = 0;
+            let player = null;
+            let timer = null;
+            let apiReady = false;
+            let pendingStartAt = null;
+
+            function fmt(t) {
+                if (t == null || isNaN(t)) return '';
+                t = Math.floor(Number(t));
+                const m = Math.floor(t/60), s = t%60;
+                return `${m}:${s.toString().padStart(2,'0')}`;
+            }
+
+            function getCur() { return Math.floor(player ? player.getCurrentTime() : 0); }
+
+            function updateStatus() {
+                const total = VIDEO_IDS.length;
+                const cur = currentIndex + 1;
+                const t = (VIDEO_TITLES[currentIndex] || '').trim();
+                const curTime = fmt(getCur());
+                const ch = fmt(VIDEO_CHORUS[currentIndex]);
+                const st = fmt(VIDEO_STARTS[currentIndex]);
+                document.getElementById('status').textContent = `Clip ${cur}/${total} ${t ? '— ' + t : ''}`;
+                document.getElementById('overlay').innerHTML = `# ${cur}/${total}` + (t ? `<span class="title">${t}</span>` : '') + `<div class="meta-line">Now: ${curTime} — Chorus: ${ch || '—'} — Start: ${st || '—'}</div>`;
+                document.getElementById('info').textContent = `Chorus=${ch || '—'} Start=${st || '—'}`;
+            }
+
+            function onYouTubeIframeAPIReady() {
+                console.log('[preview] IFrame API ready');
+                apiReady = true;
+                if (!player && VIDEO_IDS.length > 0) {
+                    player = new YT.Player('player', {
+                        videoId: VIDEO_IDS[currentIndex],
+                        playerVars: { rel: 0, modestbranding: 1, controls: 1, fs: 1 },
+                        events: {
+                            'onReady': () => {
+                                console.log('[preview] player ready');
+                                onPlayerReady();
+                                if (pendingStartAt != null) {
+                                    const start = Number(pendingStartAt) || 0;
+                                    pendingStartAt = null;
+                                    loadCurrent(start);
+                                }
+                            },
+                            'onStateChange': onPlayerStateChange
+                        }
+                    });
+                }
+            }
+
+            function loadCurrent(at=0) {
+                if (!player) return;
+                try { player.stopVideo(); } catch(e) {}
+                player.loadVideoById({videoId: VIDEO_IDS[currentIndex], startSeconds: Math.max(0, at)});
+                player.playVideo();
+                updateStatus();
+            }
+
+            function playCurrent() {
+                if (!apiReady) { console.log('[preview] API not ready yet'); updateStatus(); return; }
+                if (!player) {
+                    if (VIDEO_IDS.length === 0) { alert('No videos found from CSV'); return; }
+                    // Create player now and request load once ready
+                    pendingStartAt = Number(VIDEO_STARTS[currentIndex] || 0) || 0;
+                    player = new YT.Player('player', {
+                        videoId: VIDEO_IDS[currentIndex],
+                        playerVars: { rel: 0, modestbranding: 1, controls: 1, fs: 1 },
+                        events: {
+                            'onReady': () => {
+                                onPlayerReady();
+                                const start = pendingStartAt || 0; pendingStartAt = null;
+                                loadCurrent(start);
+                            },
+                            'onStateChange': onPlayerStateChange
+                        }
+                    });
+                    return;
+                }
+                const at = Number(VIDEO_STARTS[currentIndex] || 0) || 0;
+                loadCurrent(at);
+            }
+            function pauseCurrent() { if (!player) return; player.pauseVideo(); updateStatus(); }
+
+            function nextClip() { currentIndex = (currentIndex + 1) % VIDEO_IDS.length; loadCurrent(0); }
+            function prevClip() { currentIndex = (currentIndex - 1 + VIDEO_IDS.length) % VIDEO_IDS.length; loadCurrent(0); }
+            function back5() { if (!player) return; player.seekTo(Math.max(0, getCur() - 5), true); updateStatus(); }
+            function fwd5() { if (!player) return; player.seekTo(getCur() + 5, true); updateStatus(); }
+
+            function onPlayerReady() { updateStatus(); }
+            function onPlayerStateChange(ev) { /* no-op */ }
+
+            function setChorus() { VIDEO_CHORUS[currentIndex] = getCur(); updateStatus(); }
+            function clearChorus() { VIDEO_CHORUS[currentIndex] = null; updateStatus(); }
+            function setStart() { VIDEO_STARTS[currentIndex] = getCur(); updateStatus(); }
+            function clearStart() { VIDEO_STARTS[currentIndex] = null; updateStatus(); }
+
+            function csvEscape(v) {
+                if (v == null) return '';
+                v = String(v);
+                if (/[",\n]/.test(v)) return '"' + v.replaceAll('"','""') + '"';
+                return v;
+            }
+            function downloadCSV() {
+                const NL = '\n';
+                const header = ['id','title','genre','chorus','start'].join(',') + NL;
+                const lines = VIDEO_IDS.map((id, i) => {
+                    return [
+                        id,
+                        VIDEO_TITLES[i] || '',
+                        VIDEO_GENRES[i] || '',
+                        VIDEO_CHORUS[i] == null ? '' : Math.max(0, Math.floor(Number(VIDEO_CHORUS[i]))),
+                        VIDEO_STARTS[i] == null ? '' : Math.max(0, Math.floor(Number(VIDEO_STARTS[i])))
+                    ].map(csvEscape).join(',');
+                }).join(NL);
+                const blob = new Blob([header + lines], {type: 'text/csv;charset=utf-8;'});
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'yt_list_with_times.csv';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+            }
+
+            document.getElementById('playBtn').addEventListener('click', playCurrent);
+            document.getElementById('pauseBtn').addEventListener('click', pauseCurrent);
+            document.getElementById('nextBtn').addEventListener('click', nextClip);
+            document.getElementById('prevBtn').addEventListener('click', prevClip);
+            document.getElementById('back5Btn').addEventListener('click', back5);
+            document.getElementById('fwd5Btn').addEventListener('click', fwd5);
+            document.getElementById('setChorusBtn').addEventListener('click', setChorus);
+            document.getElementById('clearChorusBtn').addEventListener('click', clearChorus);
+            document.getElementById('setStartBtn').addEventListener('click', setStart);
+            document.getElementById('clearStartBtn').addEventListener('click', clearStart);
+            document.getElementById('downloadBtn').addEventListener('click', downloadCSV);
+
+            // Initialize UI state
+            try { updateStatus(); } catch (e) { console.warn('[preview] updateStatus failed', e); }
+            if (VIDEO_IDS.length === 0) {
+                document.getElementById('status').textContent = 'No videos found from CSV';
+            }
+            // Load the IFrame API
+            const tag = document.createElement('script');
+            tag.src = "https://www.youtube.com/iframe_api";
+            document.body.appendChild(tag);
+        </script>
+    </body>
+    </html>
+    

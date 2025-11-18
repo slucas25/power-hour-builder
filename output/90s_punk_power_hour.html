@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Power Hour (YouTube)</title>
+    <style>
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; padding: 0; background: #111; color: #eee; }
+        header { padding: 12px 16px; background: #181818; position: sticky; top: 0; z-index: 2; }
+        .player-wrap { position: relative; width: 100%; max-width: 1280px; margin: 12px auto; }
+        .player-wrap::before { content: ''; display: block; width: 100%; padding-top: calc(100% * 9 / 16); }
+        #player { position: absolute; inset: 0; width: 100%; height: 100%; }
+        .title-blocker { position: absolute; bottom: 0; left: 0; right: 0; height: 60px; background: linear-gradient(to top, rgba(17,17,17,0.95) 0%, rgba(17,17,17,0.8) 50%, transparent 100%); pointer-events: none; z-index: 1; }
+        .overlay { position: absolute; left: 8px; top: 8px; background: rgba(0,0,0,0.6); color: #fff; padding: 6px 10px; border-radius: 6px; font-weight: 600; pointer-events: none; max-width: 95%; z-index: 2; }
+        .overlay .title { display: block; font-weight: 500; opacity: 0.9; font-size: 14px; margin-top: 2px; }
+        .overlay .title.hidden { display: none; }
+        .wrap { max-width: 1280px; margin: 0 auto; padding: 8px 16px; }
+        .btn { background: #2d6cdf; color: white; border: 0; padding: 8px 12px; border-radius: 6px; margin-right: 8px; cursor: pointer; }
+        .btn:disabled { opacity: 0.6; cursor: default; }
+        .meta { opacity: 0.8; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="wrap">
+            <button id="playBtn" class="btn">Play</button>
+            <button id="pauseBtn" class="btn">Pause</button>
+            <button id="prevBtn" class="btn">Prev</button>
+            <button id="nextBtn" class="btn">Next</button>
+            <span class="meta" id="status"></span>
+        </div>
+    </header>
+    <div class="wrap">
+        <div class="player-wrap">
+            <div id="player"></div>
+            <div class="title-blocker"></div>
+            <div class="overlay" id="overlay"></div>
+        </div>
+    </div>
+
+    <script>
+        const VIDEO_IDS = ['gkTb9GP9lVI','DhKHAopx7D0','nA8Pn3yGfXM','sT0g16_LQaQ','oh8zcbC_Dcw','vVy9Lgpg1m4','MYfXKYQUgGA','u8FAbjjB48A','jJo0MT3d-1k','d3pQ2nYNvlM','2-V8kYT1pvE','s1tAYmMjLdY','AEKbFMvkLIc','h3YIqrwc9HQ','z0qW9P-uYfM','CTfzQ6e5RkM','Xp5l3dv_jWQ','tWyh-BF3l3g','8q182kWAhiM','_GRbYlqxqWk','1xSw9PpDg7s','x-64CaD8GXw','nlAGnQRqQns','EqWlxQ4FZpI','pVIpBoMtRPg','Vg1jyL3cr60','SJ7v58m_byI','8fM3P6cIGvU','GUe5uW1LOLE','YCl42c0ZE3I','OMrLCvn-AAs','lrIPchQFLxw','1jOk8dk-qaU','FZiJGN8qCCU','NHozn0YXAeE','4H5I6y1Qvz0','LordVWFyi60','_lQGuSj52q8','Q19nlVDRGpM','jrxI_euTX4A','QtTR-_Klcq8','Tjwwvfwsubdg','0P9QMkm9Eew','7nqHl_7oNEk','eDbp9T2nmVs','9Ht5RZpzPqw','eXXiC4P2oFY','D0W1v0kOELA','h5nH5S-iYpo','Bv4CqIxqTMA','kZDvg92tTMY','_pUgP2Evh2o','KnQH0ZCfiL4','KJqLuPs3GZA','sT5b1JLy6VI','Bm1g5Yg0hUw','sT0g16_LQaQ','GUe5uW1LOLE','2-V8kYT1pvE','d3pQ2nYNvlM'];
+        const VIDEO_TITLES = ['Green Day - Longview','Rancid - Time Bomb','NOFX - Linoleum (Live)','Blink-182 - Dammit','Social Distortion - Story of My Life','Blink-182 - Josie','Pennywise - Alien','MxPx - Chick Magnet','The Vandals - My Girlfriend\u0027s Dead','Millencolin - No Cigar','Sum 41 - Fat Lip','Goldfinger - Here in Your Bedroom','Saves the Day - At Your Funeral','Jawbreaker - Boxcar','Descendents - Coolidge','ALL - She\u0027s My Ex','Screeching Weasel - My Brain Hurts','The Queers - Punk Rock Girls','H2O - 5 Year Plan','Bouncing Souls - True Believers','Good Riddance - Mother Superior','Dropkick Murphys - Barroom Hero','Flogging Molly - Drunken Lullabies','Strike Anywhere - Refusal','Hot Water Music - Trusty Chords','Propagandhi - Anti-Manifesto','Lifetime - Turnpike Gates','Dillinger Four - Doublewhiskeycokenoice','Rancid - Salvation','Bad Religion - Generator','Bad Religion - Punk Rock Song','MxPx - Punk Rawk Show','No Use for a Name - Dumb Reminders','Strung Out - Matchbook','Less Than Jake - All My Best Friends Are Metalheads','Reel Big Fish - Sell Out','Green Day - Welcome to Paradise','Green Day - When I Come Around','The Offspring - Come Out and Play','The Offspring - Gone Away','Rancid - Ruby Soho','Rancid - Roots Radicals','NOFX - The Brews','Bad Religion - Infected','Pennywise - Same Old Story','Blink-182 - All the Small Things','Social Distortion - I Was Wrong','The Offspring - Bad Habit','The Offspring - All I Want','NOFX - Bob','Bad Religion - 21st Century Digital Boy','Pennywise - Bro Hymn','Lagwagon - May 16','Face to Face - Disconnected','NOFX - Linoleum','Bad Religion - American Jesus','Blink-182 - Dammit','Rancid - Salvation','Sum 41 - Fat Lip','Millencolin - No Cigar'];
+        const CLIP_SECONDS = 60.000;
+        const VIDEO_STARTS = [15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0];
+        const TITLE_REVEAL_DELAY = 20.000;
+        let currentIndex = 0;
+        let player = null;
+        let timer = null;
+        let titleTimer = null;
+        let checkInterval = null;
+
+        function updateStatus(showTitle = false) {
+            const s = document.getElementById('status');
+            const total = VIDEO_IDS.length;
+            const cur = currentIndex + 1;
+            const t = (VIDEO_TITLES[currentIndex] || '').trim();
+            s.textContent = `Clip ${cur} / ${total} (each ${Math.round(CLIP_SECONDS)}s)${showTitle && t ? ' — ' + t : ''}`;
+            const ov = document.getElementById('overlay');
+            ov.innerHTML = `<div># ${cur} / ${total}</div>` + (t ? `<span class="title${showTitle ? '' : ' hidden'}">${t}</span>` : '');
+        }
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                videoId: VIDEO_IDS[currentIndex],
+                playerVars: {
+                    rel: 0,
+                    modestbranding: 1,
+                    controls: 1,
+                    fs: 1
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        function checkPlaybackTime() {
+            if (!player || !player.getCurrentTime) return;
+            try {
+                const currentTime = player.getCurrentTime();
+                const startTime = Number(VIDEO_STARTS[currentIndex] || 0);
+                const elapsed = currentTime - startTime;
+                
+                // Check if we've played for the clip duration
+                if (elapsed >= CLIP_SECONDS) {
+                    nextClip();
+                }
+                
+                // Show title after delay
+                if (TITLE_REVEAL_DELAY > 0 && elapsed >= TITLE_REVEAL_DELAY && elapsed < TITLE_REVEAL_DELAY + 0.5) {
+                    updateStatus(true);
+                }
+            } catch(e) {
+                console.warn('Error checking playback time:', e);
+            }
+        }
+
+        function playCurrent() {
+            if (!player) return;
+            try { player.stopVideo(); } catch(e) {}
+            const start = Number(VIDEO_STARTS[currentIndex] || 0);
+            player.loadVideoById({videoId: VIDEO_IDS[currentIndex], startSeconds: start});
+            player.playVideo();
+            clearTimers();
+            const showTitleImmediately = TITLE_REVEAL_DELAY <= 0;
+            updateStatus(showTitleImmediately);
+            // Check playback time every 500ms
+            checkInterval = setInterval(checkPlaybackTime, 500);
+        }
+
+        function clearTimers() {
+            if (timer) { clearTimeout(timer); timer = null; }
+            if (titleTimer) { clearTimeout(titleTimer); titleTimer = null; }
+            if (checkInterval) { clearInterval(checkInterval); checkInterval = null; }
+        }
+
+        function nextClip() {
+            clearTimers();
+            currentIndex = (currentIndex + 1) % VIDEO_IDS.length;
+            playCurrent();
+        }
+
+        function prevClip() {
+            clearTimers();
+            currentIndex = (currentIndex - 1 + VIDEO_IDS.length) % VIDEO_IDS.length;
+            playCurrent();
+        }
+
+        function onPlayerReady() {
+            updateStatus(TITLE_REVEAL_DELAY <= 0);
+        }
+
+        function onPlayerStateChange(ev) {
+            // No-op; we use timer for advancing
+        }
+
+        document.getElementById('playBtn').addEventListener('click', () => {
+            playCurrent();
+        });
+        document.getElementById('pauseBtn').addEventListener('click', () => {
+            clearTimers();
+            if (player) player.pauseVideo();
+        });
+        document.getElementById('nextBtn').addEventListener('click', nextClip);
+        document.getElementById('prevBtn').addEventListener('click', prevClip);
+
+        // Load the IFrame Player API
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        document.body.appendChild(tag);
+    </script>
+</body>
+</html>

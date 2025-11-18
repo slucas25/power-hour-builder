@@ -8,7 +8,7 @@ __pycache__/
 
 # Output
 output/*.mp4
-output/*.html
+# Note: HTML files in output/ are now tracked to preserve generated power hours
 *.temp-audio.m4a
 
 # Logs
