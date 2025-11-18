@@ -38,7 +38,7 @@ jobs:
               '1. Research 60 songs matching this theme\n' +
               '2. Find official YouTube music videos (studio versions only)\n' +
               '3. Create CSV: input/' + filename + '_list.csv (columns: id, title, start)\n' +
-              '4. Generate HTML: python -m power_hour.cli build-youtube-html input/' + filename + '_list.csv output/' + filename + '_power_hour.html --clip-seconds 60 --title-reveal-delay 20 --no-shuffle --default-start 15\n' +
+              '4. Generate HTML: python -m power_hour.cli build-youtube-html --urls-csv input/' + filename + '_list.csv --output output/' + filename + '_power_hour.html --clip-seconds 60 --title-reveal-delay 20 --no-shuffle --default-start 15\n' +
               '5. Run tests: pytest tests/\n' +
               '6. Create PR titled "Add ' + theme + ' Power Hour Playlist" linked to issue #' + issueNumber + '\n' +
               '7. Close this issue when PR merges\n\n' +
