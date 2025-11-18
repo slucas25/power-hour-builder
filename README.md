@@ -6,6 +6,13 @@ Create a configurable "power hour" video: 60 music videos, each clipped to N sec
 
 ```
 power-hour/
+├── .github/
+│   ├── ISSUE_TEMPLATE/
+│   │   └── playlist-idea.md      # Template for playlist requests
+│   └── workflows/
+│       ├── playlist-automation.yml # Automated playlist generation
+│       ├── release.yml             # Automated releases
+│       └── tests.yml               # CI testing
 ├── input/              # CSV playlists for YouTube-based power hours
 │   ├── 70s_light_rock_list.csv
 │   ├── 70s_metal_list.csv
@@ -20,6 +27,10 @@ power-hour/
 ├── power_hour/         # Python package
 │   ├── builder.py
 │   └── cli.py
+├── scripts/
+│   └── generate_playlist.py       # Playlist generation helper
+├── tests/
+│   └── test_basics.py             # Unit and regression tests
 └── README.md
 ```
 
@@ -241,6 +252,50 @@ python -m power_hour.cli build-youtube-html \
 ```
 
 CSV may include a `genre` column (optionally pipe-separated like `pop|dance`). Use `--genre` to filter rows. You can also combine `--limit`, `--shuffle`, and `--seed` for selection control.
+
+## Automated Playlist Generation
+
+This project includes automation for community-driven playlist creation:
+
+### For Users: Requesting a Playlist
+
+1. Go to [Issues](../../issues) and click "New Issue"
+2. Select "Power Hour Playlist Idea" template
+3. Fill in:
+   - Theme (e.g., "90s Britpop", "Motown Classics")
+   - Description of the vibe
+   - 5-10 sample songs/artists
+   - Target era/genre
+4. Submit the issue
+
+### What Happens Next
+
+When you label an issue with `playlist-idea`:
+1. GitHub Actions triggers automatically
+2. A coding agent is notified to create the playlist
+3. The agent will:
+   - Research 60 songs matching your theme
+   - Find verified YouTube videos (studio versions preferred)
+   - Create the CSV file in `input/`
+   - Generate the HTML player in `output/`
+   - Run validation tests
+   - Open a PR for review
+4. Once the PR is merged, your issue is automatically closed
+5. Your power hour is ready to play!
+
+### For Maintainers: Manual Playlist Generation
+
+If you prefer to generate playlists manually:
+
+```bash
+# Parse an issue and get agent instructions
+python scripts/generate_playlist.py '{"title": "80s Synth Pop", "body": "...", "number": 42}'
+
+# Or trigger the coding agent manually with:
+# @github-copilot create a power hour for [theme]
+```
+
+The workflow creates structured prompts for the coding agent with all verification steps included.
 
 ## Notes and tips
 
