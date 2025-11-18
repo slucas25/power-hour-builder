@@ -125,7 +125,7 @@ python -m power_hour.cli plan \
 
 ## YouTube (no-download) mode
 
-If you’d rather not download anything and want to play clips directly from YouTube, generate a local HTML player that uses the official YouTube IFrame API and advances every N seconds. You supply a text file of YouTube URLs or IDs (one per line):
+If you'd rather not download anything and want to play clips directly from YouTube, generate a local HTML player that uses the official YouTube IFrame API and advances every N seconds. You supply a text file of YouTube URLs or IDs (one per line):
 
 ```text
 https://www.youtube.com/watch?v=VIDEOID1
@@ -142,7 +142,25 @@ python -m power_hour.cli build-youtube-html \
   --output ./output/power_hour_youtube.html
 ```
 
-Open the generated HTML in a browser with internet access. It will play each video for the requested clip length and then advance to the next, without downloading the content.
+### Viewing the Generated HTML
+
+**Important:** Due to browser security policies, YouTube embeds won't work when opening HTML files directly (`file://` protocol). You must serve them through a web server:
+
+**Quick Local Server:**
+```bash
+# From the project root
+cd output
+python3 -m http.server 8000
+```
+
+Then open your browser to: `http://localhost:8000/power_hour_youtube.html`
+
+**Or use the convenience script:**
+```bash
+./serve.sh 70s_light_rock_power_hour.html
+```
+
+The HTML will play each video for the requested clip length and then advance to the next, without downloading the content.
 
 Notes:
 - This uses the YouTube IFrame Player API. Review and follow YouTube's API Terms of Service and branding/controls policies.
