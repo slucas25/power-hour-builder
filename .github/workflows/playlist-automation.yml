@@ -46,8 +46,9 @@ jobs:
               '5. Verify HTML file exists: ls -la output/' + filename + '_power_hour.html\n' +
               '6. Run tests: pytest tests/\n' +
               '7. Commit BOTH files: git add input/' + filename + '_list.csv output/' + filename + '_power_hour.html\n' +
-              '8. Create PR titled "Add ' + theme + ' Power Hour Playlist" linked to issue #' + issueNumber + '\n' +
-              '9. Close this issue when PR merges\n\n' +
+              '8. Create PR with description that includes: "Closes #' + issueNumber + '"\n' +
+              '   Title: "Add ' + theme + ' Power Hour Playlist"\n' +
+              '   Body must contain: Closes #' + issueNumber + ' (this auto-closes the issue when PR merges)\n\n' +
               'Important: NO &start_radio=1 URLs. Use curl to verify each video. Follow README.md verification steps.';
             
             await github.rest.issues.createComment({
