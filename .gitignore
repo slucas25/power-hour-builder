@@ -31,4 +31,5 @@ Thumbs.db
 
 # Root level text/csv files (keep organized ones in input/)
 /*.txt
+!requirements.txt
 /*.csv
