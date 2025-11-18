@@ -14,108 +14,46 @@ jobs:
       pull-requests: write
     
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      
-      - name: Extract issue details
-        id: issue
-        run: |
-          echo "issue_number=${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
-          echo "issue_title=${{ github.event.issue.title }}" >> $GITHUB_OUTPUT
-          echo "issue_body<<EOF" >> $GITHUB_OUTPUT
-          echo "${{ github.event.issue.body }}" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-      
-      - name: Add comment to issue
+      - name: Invoke Copilot Coding Agent
         uses: actions/github-script@v7
         with:
           script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '🎵 **Playlist generation started!**\n\nThe GitHub Copilot coding agent is researching songs and creating your power hour playlist. This may take a few minutes.\n\nI will:\n1. Research 60 songs matching your theme\n2. Find verified YouTube video URLs\n3. Create the CSV file in `input/`\n4. Generate the HTML player in `output/`\n5. Open a PR for review\n\nYou\'ll be notified when the PR is ready!'
-            })
-      
-      - name: Trigger Copilot Coding Agent
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const issueBody = `${{ steps.issue.outputs.issue_body }}`;
-            const issueTitle = `${{ steps.issue.outputs.issue_title }}`.replace('[PLAYLIST] ', '');
+            const issueBody = context.payload.issue.body;
+            const issueTitle = context.payload.issue.title.replace('[PLAYLIST] ', '');
+            const issueNumber = context.issue.number;
             
-            // Parse the issue template to extract details
             const themeMatch = issueBody.match(/## Playlist Theme\s*(?:<!--.*?-->\s*)?(.*?)(?=\n##|\n---|\z)/s);
-            const descriptionMatch = issueBody.match(/## Description\s*(?:<!--.*?-->\s*)?(.*?)(?=\n##|\n---|\z)/s);
             const samplesMatch = issueBody.match(/## Sample Songs\/Artists\s*(?:<!--.*?-->\s*)?(.*?)(?=\n##|\n---|\z)/s);
-            const eraMatch = issueBody.match(/## Target Era\/Genre\s*(?:<!--.*?-->\s*)?(.*?)(?=\n##|\n---|\z)/s);
-            const notesMatch = issueBody.match(/## Additional Notes\s*(?:<!--.*?-->\s*)?(.*?)(?=\n##|\n---|\z)/s);
             
             const theme = themeMatch ? themeMatch[1].trim() : issueTitle;
-            const description = descriptionMatch ? descriptionMatch[1].trim() : '';
-            const samples = samplesMatch ? samplesMatch[1].trim() : '';
-            const era = eraMatch ? eraMatch[1].trim() : '';
-            const notes = notesMatch ? notesMatch[1].trim() : '';
-            
-            // Create filename from theme
+            const samplesList = samplesMatch ? samplesMatch[1].trim().split('\n').filter(l => l.trim().startsWith('-')).slice(0, 5).join('\n') : 'See issue';
             const filename = theme.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
             
-            const agentPrompt = `Create a new power hour playlist for: ${theme}
+            const message = `🎵 **Playlist request received!**
 
-            **Description:** ${description || 'Not provided'}
-            **Era/Genre:** ${era || 'Not specified'}
-            **Sample Songs/Artists:**
-            ${samples || 'Not provided'}
-            **Additional Notes:** ${notes || 'None'}
+#github-pull-request_copilot-coding-agent please create this power hour playlist:
 
-            **Your Task:**
-            1. Research and select 60 songs that fit this theme perfectly
-            2. For each song, find the official music video or high-quality video on YouTube
-            3. Verify each video URL works (no &start_radio=1 URLs)
-            4. Prefer studio versions over live performances
-            5. Set appropriate start times (usually 15 seconds, but adjust for intros)
-            6. Create the CSV file: input/${filename}_list.csv
-            7. Generate the HTML player: output/${filename}_power_hour.html using the CLI tool
-            8. Run tests to validate the CSV format
-            9. Create a PR with title: "Add ${theme} Power Hour Playlist"
-            10. Link the PR to issue #${{ steps.issue.outputs.issue_number }}
+**Theme:** ${theme}
 
-            **Important:** Follow the verification process documented in README.md:
-            - Use curl to verify each YouTube URL returns valid content
-            - Check that video titles match the artist/song
-            - Avoid live versions, radio URLs, and unavailable videos
+**Sample tracks:**
+${samplesList}
 
-            **Commands to run:**
-            \`\`\`bash
-            # Create the CSV with 60 verified tracks
-            # Then generate the HTML
-            source .venv/bin/activate
-            python -m power_hour.cli build-youtube-html input/${filename}_list.csv output/${filename}_power_hour.html --clip-seconds 60 --title-reveal-delay 20 --no-shuffle --default-start 15
+**Task:** Create a 60-song power hour for this theme. Check the full issue description above for all details.
+
+**Steps:**
+1. Research 60 songs matching this theme
+2. Find official YouTube music videos (studio versions only)
+3. Create CSV: input/${filename}_list.csv (columns: id, title, start)
+4. Generate HTML: python -m power_hour.cli build-youtube-html input/${filename}_list.csv output/${filename}_power_hour.html --clip-seconds 60 --title-reveal-delay 20 --no-shuffle --default-start 15
+5. Run tests: pytest tests/
+6. Create PR titled "Add ${theme} Power Hour Playlist" linked to issue #${issueNumber}
+7. Close this issue when PR merges
+
+**Important:** NO &start_radio=1 URLs. Use curl to verify each video. Follow README.md verification steps.`;
             
-            # Run tests
-            pytest tests/
-            \`\`\`
-
-            Close issue #${{ steps.issue.outputs.issue_number }} when the PR is merged.`;
-            
-            core.setOutput('agent_prompt', agentPrompt);
-            core.setOutput('issue_number', '${{ steps.issue.outputs.issue_number }}');
-      
-      - name: Create agent task file
-        run: |
-          cat > agent_task.txt << 'EOF'
-          ${{ steps.trigger.outputs.agent_prompt }}
-          EOF
-          cat agent_task.txt
-        id: task
-      
-      - name: Post agent instructions
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
+            await github.rest.issues.createComment({
+              issue_number: issueNumber,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '📋 **Agent Task Created**\n\n@github-copilot please execute the task in the workflow log.\n\nThe coding agent will now:\n- Research 60 songs for this theme\n- Create verified CSV with YouTube URLs\n- Generate HTML power hour player\n- Run validation tests\n- Open a PR for review\n\nThis issue will be automatically closed when the PR is merged.'
-            })
+              body: message
+            });
