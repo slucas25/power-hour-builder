@@ -315,6 +315,28 @@ python scripts/generate_playlist.py '{"title": "80s Synth Pop", "body": "...", "
 
 The workflow creates structured prompts for the coding agent with all verification steps included.
 
+### Updating the Landing Page
+
+After adding new playlists, regenerate the `index.html` landing page:
+
+```bash
+python3 scripts/generate_index.py
+```
+
+This automatically:
+- Scans `output/` for power hour HTML files
+- Generates playlist cards with titles and descriptions
+- Updates the landing page
+
+**To add metadata for a new playlist**, edit `scripts/generate_index.py` and add an entry to the `PLAYLIST_INFO` dictionary:
+
+```python
+"your_playlist_name_power_hour": (
+    "Display Title",
+    "Description of the playlist vibe and artists"
+),
+```
+
 ## Notes and tips
 
 - Performance: Rendering 60 clips can take time. Prefer local SSD storage and avoid super-high resolutions. 1280x720 (HD) is a good balance.
