@@ -34,6 +34,7 @@ def extract_video_id(url_or_id: str) -> str:
             if vid:
                 return vid
     except Exception:
+        # If parsing fails, fall back to returning the input string as-is.
         pass
     return s
 
