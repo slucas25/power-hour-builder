@@ -200,6 +200,72 @@ def build(
     console.print(f"[green]Done:[/green] {out}")
 
 
+def _validate_youtube_videos(items: list[tuple[str, str, float]]) -> list[dict]:
+    """Validate YouTube videos using oEmbed API. Returns list of validation results with severity levels."""
+    import urllib.request
+    import urllib.error
+    import json
+    
+    results = []
+    for idx, (video_id, title, start) in enumerate(items):
+        url = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json"
+        result = {
+            "index": idx,
+            "video_id": video_id,
+            "title": title,
+            "severity": "ok",
+            "issues": []
+        }
+        
+        try:
+            response = urllib.request.urlopen(url)
+            data = json.loads(response.read())
+            actual_title = data.get("title", "")
+            author = data.get("author_name", "")
+            
+            # Check for wrong artist
+            if title:
+                expected_artist = title.split(" - ")[0].strip().lower()
+                if expected_artist and expected_artist not in actual_title.lower() and expected_artist not in author.lower():
+                    result["severity"] = "error"
+                    result["issues"].append(f"Wrong artist (expected {expected_artist}, got {author})")
+            
+            # Check for audio-only content
+            audio_keywords = ["audio", "lyric", "lyrics", "- topic"]
+            if any(kw in actual_title.lower() for kw in audio_keywords):
+                if result["severity"] == "ok":
+                    result["severity"] = "warning"
+                result["issues"].append("Audio-only/lyrics (not music video)")
+            
+            # Check for title mismatch
+            if title:
+                expected_words = set(title.lower().replace("-", " ").split())
+                actual_words = set(actual_title.lower().replace("-", " ").split())
+                common = expected_words & actual_words
+                if len(common) < 2:
+                    if result["severity"] == "ok":
+                        result["severity"] = "warning"
+                    result["issues"].append("Title mismatch - may be wrong video")
+            
+        except urllib.error.HTTPError as e:
+            result["severity"] = "error"
+            if e.code == 404:
+                result["issues"].append("Video not found (404)")
+            elif e.code == 401:
+                result["issues"].append("Not embeddable (401)")
+            elif e.code == 403:
+                result["issues"].append("Access forbidden (403)")
+            else:
+                result["issues"].append(f"HTTP error {e.code}")
+        except Exception as e:
+            result["severity"] = "error"
+            result["issues"].append(f"Validation failed: {str(e)}")
+        
+        results.append(result)
+    
+    return results
+
+
 def _extract_video_id(url_or_id: str) -> str:
         s = url_or_id.strip()
         if not s:
@@ -336,6 +402,7 @@ def _write_youtube_html(items: list[tuple[str, str, float]], out_path: Path, cli
         .overlay .title.hidden { display: none; }
         .wrap { max-width: 1280px; margin: 0 auto; padding: 8px 16px; }
         .btn { background: #2d6cdf; color: white; border: 0; padding: 8px 12px; border-radius: 6px; margin-right: 8px; cursor: pointer; }
+        .btn.youtube-link { background: #ff0000; text-decoration: none; display: inline-block; }
         .btn:disabled { opacity: 0.6; cursor: default; }
         .meta { opacity: 0.8; font-size: 14px; }
     </style>
@@ -347,6 +414,7 @@ def _write_youtube_html(items: list[tuple[str, str, float]], out_path: Path, cli
             <button id=\"pauseBtn\" class=\"btn\">Pause</button>
             <button id=\"prevBtn\" class=\"btn\">Prev</button>
             <button id=\"nextBtn\" class=\"btn\">Next</button>
+            <a id=\"ytLink\" class=\"btn youtube-link\" href=\"#\" target=\"_blank\" rel=\"noopener\">Watch on YouTube</a>
             <span class=\"meta\" id=\"status\"></span>
         </div>
     </header>
@@ -378,16 +446,24 @@ def _write_youtube_html(items: list[tuple[str, str, float]], out_path: Path, cli
             s.textContent = `Clip ${cur} / ${total} (each ${Math.round(CLIP_SECONDS)}s)${showTitle && t ? ' — ' + t : ''}`;
             const ov = document.getElementById('overlay');
             ov.innerHTML = `<div># ${cur} / ${total}</div>` + (t ? `<span class=\"title${showTitle ? '' : ' hidden'}\">${t}</span>` : '');
+            // Update YouTube link
+            const ytLink = document.getElementById('ytLink');
+            if (ytLink) {
+                ytLink.href = `https://www.youtube.com/watch?v=${VIDEO_IDS[currentIndex]}&t=${Math.floor(VIDEO_STARTS[currentIndex])}s`;
+            }
         }
 
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('player', {
                 videoId: VIDEO_IDS[currentIndex],
                 playerVars: {
+                    autoplay: 1,
                     rel: 0,
                     modestbranding: 1,
                     controls: 1,
-                    fs: 1
+                    fs: 1,
+                    iv_load_policy: 3,
+                    origin: window.location.origin
                 },
                 events: {
                     'onReady': onPlayerReady,
@@ -772,6 +848,8 @@ def build_youtube_html(
     default_start: float = typer.Option(0.0, min=0.0, help="Start at this time if no chorus/start provided in CSV or text file"),
     title_reveal_delay: float = typer.Option(0.0, min=0.0, help="Seconds to wait before revealing song title (0 = show immediately, good for guessing games)"),
     output: Path = typer.Option(Path("./output/power_hour_youtube.html")),
+    skip_validation: bool = typer.Option(False, help="Skip validation checks (faster but may include broken videos)"),
+    strict: bool = typer.Option(False, help="Strict mode: refuse to build if validation finds any errors"),
 ):
     """Generate an HTML player that sequences YouTube videos for N seconds each (no downloading)."""
     final_items: list[tuple[str, str, float]] = []
@@ -818,6 +896,37 @@ def build_youtube_html(
 
     if not final_items:
         raise typer.BadParameter("No valid YouTube IDs/URLs found after filtering/picking. Ensure CSV has 'id' or 'url' headers and rows are not empty.")
+    
+    # Validate videos unless skipped
+    if not skip_validation:
+        console.print(f"[cyan]🔍 Validating {len(final_items)} videos...[/cyan]")
+        validation_results = _validate_youtube_videos(final_items)
+        errors = [r for r in validation_results if r["severity"] == "error"]
+        warnings = [r for r in validation_results if r["severity"] == "warning"]
+        
+        if errors:
+            console.print(f"[red]❌ Found {len(errors)} critical error(s):[/red]")
+            for result in errors[:5]:  # Show first 5 errors
+                console.print(f"  • Track {result['index'] + 1}: {result['title']} - {', '.join(result['issues'])}")
+            if len(errors) > 5:
+                console.print(f"  ... and {len(errors) - 5} more errors")
+            
+            if strict:
+                console.print("[red]❌ STRICT MODE: Refusing to build due to validation errors.[/red]")
+                console.print("[yellow]Fix the errors and try again, or remove --strict flag.[/yellow]")
+                raise typer.Exit(code=1)
+            else:
+                console.print("[yellow]⚠️  Proceeding anyway, but playlist may have broken videos.[/yellow]")
+                console.print("[dim]Use --strict to prevent building with errors.[/dim]")
+        
+        if warnings:
+            console.print(f"[yellow]⚠️  Found {len(warnings)} warning(s) (audio-only, title mismatches, etc.)[/yellow]")
+            if strict and warnings:
+                console.print("[yellow]Note: --strict mode only blocks on errors, not warnings.[/yellow]")
+        
+        if not errors and not warnings:
+            console.print("[green]✅ All videos validated successfully![/green]")
+    
     _write_youtube_html(final_items, output, clip_seconds, title_reveal_delay)
     console.print(f"[green]HTML written:[/green] {output}")
 
