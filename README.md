@@ -271,6 +271,48 @@ python -m power_hour.cli build-youtube-html \
 
 CSV may include a `genre` column (optionally pipe-separated like `pop|dance`). Use `--genre` to filter rows. You can also combine `--limit`, `--shuffle`, and `--seed` for selection control.
 
+### Playlist Validation
+
+The build process automatically validates all videos before generating the HTML. This catches issues like:
+- ❌ **404 errors** (video removed/unavailable)
+- ❌ **Wrong video IDs** (artist/song mismatch)
+- ❌ **Duplicate videos** (same video ID appearing multiple times)
+- ⚠️ **Genre mismatches** (pop-punk in a metal playlist)
+- ⚠️ **Audio-only tracks** (not music videos)
+- ⚠️ **Title mismatches** (may be wrong video)
+
+**Validation runs automatically** on every build. To skip validation (faster but risky):
+```bash
+python -m power_hour.cli build-youtube-html \
+  --urls-csv input/playlist.csv \
+  --output output/playlist.html \
+  --skip-validation
+```
+
+**Strict mode** refuses to build if critical errors are found:
+```bash
+python -m power_hour.cli build-youtube-html \
+  --urls-csv input/playlist.csv \
+  --output output/playlist.html \
+  --strict
+```
+
+**Standalone validation** to check a playlist without building:
+```bash
+python3 scripts/validate_playlist.py input/playlist.csv
+```
+
+Validate only the first N tracks:
+```bash
+python3 scripts/validate_playlist.py input/playlist.csv 30
+```
+
+The validator provides detailed output showing:
+- ✅ Working videos with actual titles
+- ⚠️ Warnings (audio-only, genre mismatches, title mismatches)
+- ❌ Critical errors (404s, wrong artists, unrelated content)
+- Summary statistics (OK count, warnings, errors)
+
 ## Automated Playlist Generation
 
 This project includes automation for community-driven playlist creation:

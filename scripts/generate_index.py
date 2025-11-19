@@ -46,6 +46,10 @@ PLAYLIST_INFO = {
         "One Hit Wonders",
         "Those unforgettable songs from artists you forgot existed"
     ),
+    "90s_pop_rock_female_power_hour": (
+        "90s Pop/Rock/Female",
+        "No Doubt, Alanis Morissette, Garbage, Hole, The Cranberries, TLC, Spice Girls, and more 90s hits"
+    ),
 }
 
 HTML_TEMPLATE = """<!DOCTYPE html>
