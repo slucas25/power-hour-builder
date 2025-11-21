@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Power Hour (YouTube)</title>
+    <style>
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; padding: 0; background: #111; color: #eee; }
+        header { padding: 12px 16px; background: #181818; position: sticky; top: 0; z-index: 2; }
+        .player-wrap { position: relative; width: 100%; max-width: 1280px; margin: 12px auto; }
+        .player-wrap::before { content: ''; display: block; width: 100%; padding-top: calc(100% * 9 / 16); }
+        #player { position: absolute; inset: 0; width: 100%; height: 100%; }
+        .title-blocker { position: absolute; bottom: 0; left: 0; right: 0; height: 60px; background: linear-gradient(to top, rgba(17,17,17,0.95) 0%, rgba(17,17,17,0.8) 50%, transparent 100%); pointer-events: none; z-index: 1; }
+        .overlay { position: absolute; left: 8px; top: 8px; background: rgba(0,0,0,0.6); color: #fff; padding: 6px 10px; border-radius: 6px; font-weight: 600; pointer-events: none; max-width: 95%; z-index: 2; }
+        .overlay .title { display: block; font-weight: 500; opacity: 0.9; font-size: 14px; margin-top: 2px; }
+        .overlay .title.hidden { display: none; }
+        .wrap { max-width: 1280px; margin: 0 auto; padding: 8px 16px; }
+        .btn { background: #2d6cdf; color: white; border: 0; padding: 8px 12px; border-radius: 6px; margin-right: 8px; cursor: pointer; }
+        .btn.youtube-link { background: #ff0000; text-decoration: none; display: inline-block; }
+        .btn:disabled { opacity: 0.6; cursor: default; }
+        .meta { opacity: 0.8; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="wrap">
+            <button id="playBtn" class="btn">Play</button>
+            <button id="pauseBtn" class="btn">Pause</button>
+            <button id="prevBtn" class="btn">Prev</button>
+            <button id="nextBtn" class="btn">Next</button>
+            <a id="ytLink" class="btn youtube-link" href="#" target="_blank" rel="noopener">Watch on YouTube</a>
+            <span class="meta" id="status"></span>
+        </div>
+    </header>
+    <div class="wrap">
+        <div class="player-wrap">
+            <div id="player"></div>
+            <div class="title-blocker"></div>
+            <div class="overlay" id="overlay"></div>
+        </div>
+    </div>
+
+    <script>
+        const VIDEO_IDS = ['QB4vok_FMfw','rqR1cjuPXUg','6gBV-Nzq7Pg','NpDYfkymaSE','NaUCDqWzy1k','4zAThXFOy2c','Xjdkc14-zwQ','hvKyBcCDOB4','o8pQLtHTPaI','1iAYhQsQhSY','zvCBSSwgtg4','EKGHkBComjM','DrQRS40OKNE','DT-dxG4WWf4','Wa3lyo_Eowc','TWcyIpul8OE','ssdgFoHLwnk','PVjiKRfKpPI','lLJf9qJHR3E','WfzRlcnq_c0','KtlgYxa6BMU','F9kXstb9FF4','uJ_1HMAGb4k','Y8wifV5RYr8','ghb6eDopW8I','DHEOF_rcND8','zYwCmcB0XMw','c_-cUdmdWgU','KHw7gdJ14uQ','L4sa2HoXpsE','5YXVMCHG-Nk','FJbmB9k2Y88','jdYJf_ybyVo','pTOC_q0NLTk','rGKfrgqWcv0','3KkUeRPjc-Y','nH7bjV0Q_44','DKL4X0PZz7M','yfySK7CLEEg','KehwyWmXr3U','oecHq2neweA','xUBYzpCNQ1I','r_0sL_SQYvw','RBumgq5yVrA','0-7IHOXkiV8','VHrLPs3_1Fs','yFTvbcNhEgc','ADP65wbBUpc','2QT5eGHCJdE','P8a4iiOnzsc','yqrAPOZxgzU','U2WDdccgaDY','v4pi1LxuDHc','GhDnyPsQsB0','mfmQe_eBvrc','qsrsrOB0zNQ','SdSCCwtNEjA','aN5s9N_pTUs','dPmZqsQNzGA','bPJSsAr2iu0'];
+        const VIDEO_TITLES = ['Tyler Childers - Nose on the Grindstone','Colter Wall - The Devil Wears a Suit and Tie','Sturgill Simpson - Turtles All the Way Down','Sturgill Simpson - You Can Have the Crown','Jason Isbell - Cover Me Up','Chris Stapleton - Tennessee Whiskey','Trampled by Turtles - Wait So Long','Old Crow Medicine Show - Wagon Wheel','Brandi Carlile - The Story','Nathaniel Rateliff - S.O.B.','The Lumineers - Ho Hey','Iron & Wine - Naked As We Came','Fleet Foxes - White Winter Hymnal','Fleet Foxes - Mykonos','The Tallest Man on Earth - The Gardener','Bon Iver - Holocene','Bon Iver - Skinny Love','Hozier - Take Me to Church','Mumford & Sons - Little Lion Man','The Civil Wars - Poison & Wine','Lord Huron - The Night We Met','The Strumbellas - Spirits','Vance Joy - Riptide','Houndmouth - Sedona','Of Monsters and Men - Little Talks','Edward Sharpe - Home','The Shins - New Slang','Sufjan Stevens - Chicago','Iron & Wine - Boy with a Coin','The Weepies - World Spins Madly On','Damien Rice - The Blower\u0027s Daughter','Glen Hansard - Falling Slowly','John Butler Trio - Ocean','The Lumineers - Ophelia','Mumford & Sons - I Will Wait','Mumford & Sons - The Cave','Hozier - Work Song','First Aid Kit - My Silver Lining','The National - Bloodbuzz Ohio','The National - Fake Empire','Andrew Bird - Pulaski at Night','Bright Eyes - First Day of My Life','Conor Oberst - Souled Out!!!','Passenger - Let Her Go','Kaleo - Way Down We Go','George Ezra - Budapest','Angus & Julia Stone - Big Jet Plane','Ben Howard - Keep Your Head Up','Daughter - Youth','Radical Face - Welcome Home','Matt Maeson - Cringe','Rainbow Kitten Surprise - It\u0027s Called: Freefall','The Lumineers - Sleep on the Floor','Bon Iver - Re: Stacks','The Avett Brothers - Kick Drum Heart','Sturgill Simpson - Living the Dream','Hozier - Cherry Wine','The Lumineers - Cleopatra','Mumford & Sons - Believe','Hozier - Someone New'];
+        const CLIP_SECONDS = 60.000;
+        const VIDEO_STARTS = [15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0];
+        const TITLE_REVEAL_DELAY = 20.000;
+        let currentIndex = 0;
+        let player = null;
+        let timer = null;
+        let titleTimer = null;
+        let checkInterval = null;
+
+        function updateStatus(showTitle = false) {
+            const s = document.getElementById('status');
+            const total = VIDEO_IDS.length;
+            const cur = currentIndex + 1;
+            const t = (VIDEO_TITLES[currentIndex] || '').trim();
+            s.textContent = `Clip ${cur} / ${total} (each ${Math.round(CLIP_SECONDS)}s)${showTitle && t ? ' — ' + t : ''}`;
+            const ov = document.getElementById('overlay');
+            ov.innerHTML = `<div># ${cur} / ${total}</div>` + (t ? `<span class="title${showTitle ? '' : ' hidden'}">${t}</span>` : '');
+            // Update YouTube link
+            const ytLink = document.getElementById('ytLink');
+            if (ytLink) {
+                ytLink.href = `https://www.youtube.com/watch?v=${VIDEO_IDS[currentIndex]}&t=${Math.floor(VIDEO_STARTS[currentIndex])}s`;
+            }
+        }
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                videoId: VIDEO_IDS[currentIndex],
+                playerVars: {
+                    autoplay: 1,
+                    rel: 0,
+                    modestbranding: 1,
+                    controls: 1,
+                    fs: 1,
+                    iv_load_policy: 3,
+                    origin: window.location.origin
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        function checkPlaybackTime() {
+            if (!player || !player.getCurrentTime) return;
+            try {
+                const currentTime = player.getCurrentTime();
+                const startTime = Number(VIDEO_STARTS[currentIndex] || 0);
+                const elapsed = currentTime - startTime;
+                
+                // Check if we've played for the clip duration
+                if (elapsed >= CLIP_SECONDS) {
+                    nextClip();
+                }
+                
+                // Show title after delay
+                if (TITLE_REVEAL_DELAY > 0 && elapsed >= TITLE_REVEAL_DELAY && elapsed < TITLE_REVEAL_DELAY + 0.5) {
+                    updateStatus(true);
+                }
+            } catch(e) {
+                console.warn('Error checking playback time:', e);
+            }
+        }
+
+        function playCurrent() {
+            if (!player) return;
+            try { player.stopVideo(); } catch(e) {}
+            const start = Number(VIDEO_STARTS[currentIndex] || 0);
+            player.loadVideoById({videoId: VIDEO_IDS[currentIndex], startSeconds: start});
+            player.playVideo();
+            clearTimers();
+            const showTitleImmediately = TITLE_REVEAL_DELAY <= 0;
+            updateStatus(showTitleImmediately);
+            // Check playback time every 500ms
+            checkInterval = setInterval(checkPlaybackTime, 500);
+        }
+
+        function clearTimers() {
+            if (timer) { clearTimeout(timer); timer = null; }
+            if (titleTimer) { clearTimeout(titleTimer); titleTimer = null; }
+            if (checkInterval) { clearInterval(checkInterval); checkInterval = null; }
+        }
+
+        function nextClip() {
+            clearTimers();
+            currentIndex = (currentIndex + 1) % VIDEO_IDS.length;
+            playCurrent();
+        }
+
+        function prevClip() {
+            clearTimers();
+            currentIndex = (currentIndex - 1 + VIDEO_IDS.length) % VIDEO_IDS.length;
+            playCurrent();
+        }
+
+        function onPlayerReady() {
+            updateStatus(TITLE_REVEAL_DELAY <= 0);
+        }
+
+        function onPlayerStateChange(ev) {
+            // No-op; we use timer for advancing
+        }
+
+        document.getElementById('playBtn').addEventListener('click', () => {
+            playCurrent();
+        });
+        document.getElementById('pauseBtn').addEventListener('click', () => {
+            clearTimers();
+            if (player) player.pauseVideo();
+        });
+        document.getElementById('nextBtn').addEventListener('click', nextClip);
+        document.getElementById('prevBtn').addEventListener('click', prevClip);
+
+        // Load the IFrame Player API
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        document.body.appendChild(tag);
+    </script>
+</body>
+</html>
