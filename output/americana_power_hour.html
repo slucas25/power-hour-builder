@@ -16,6 +16,7 @@
         .overlay .title.hidden { display: none; }
         .wrap { max-width: 1280px; margin: 0 auto; padding: 8px 16px; }
         .btn { background: #2d6cdf; color: white; border: 0; padding: 8px 12px; border-radius: 6px; margin-right: 8px; cursor: pointer; }
+        .btn.youtube-link { background: #ff0000; text-decoration: none; display: inline-block; }
         .btn:disabled { opacity: 0.6; cursor: default; }
         .meta { opacity: 0.8; font-size: 14px; }
     </style>
@@ -27,6 +28,7 @@
             <button id="pauseBtn" class="btn">Pause</button>
             <button id="prevBtn" class="btn">Prev</button>
             <button id="nextBtn" class="btn">Next</button>
+            <a id="ytLink" class="btn youtube-link" href="#" target="_blank" rel="noopener">Watch on YouTube</a>
             <span class="meta" id="status"></span>
         </div>
     </header>
@@ -39,10 +41,10 @@
     </div>
 
     <script>
-        const VIDEO_IDS = ['1iAYhQsQhSY','sXn2BR01Z04','rId6PKlDXeU','zvCBSSwgtg4','DaVA6sgOpws','1DrxC16P51A','NoCOagL5VoQ','4N3N1MlvVc4','hPsdjlPVaJU','bx1Bh8ZvH84','_zFodbxtH3k','qx1s_3CF07k','wSdT-SArM2Q','crOZk88ggP0','GhfJR2Q6hZA','1unHGP_a6ok','P_i1xk07o4g','fhLCf0M9d6w','8AHCfZTRGiI','8v9Np5IFZkY','6mEfDSP4g_U','DvKbT8E5Bjo','w1o7Nz6K9f0','2iSQGWpy0qY','wYsMjEeEg4g','tJSWcWfSqXg','VPLCk-FTVvw','o0u4M6vppCI','rEXhAMtbaec','sYi7uEvEEmk','w7DMAGOKr0M','X66jntR0MVE','WXKJKpAwhPs','SU3kYxJmWuQ','jBwBh-JgD6k','NhwNToibwKs','rR6AYQBWfaQ','BqnG_Ei35JE','9Cy8jStqWPc','pcawnRIyeok','4Bjd-5pHGTo','Xjdkc14-zwQ','OIk-BmPh_5Y','G02wKufX3nw','wfzQ40D4ZlU','NNxpCQ7N5mE','V1M2i9O1x3Y','BVzVFMlPzgk','M6DBwZ1JRrE','U7Af8dD1M-0','7QN3X4DAdwA','wjiG2bM0YQs','Y6rIq-jWJMU','DHEOF_rcND8','0dVZIqnNxQo','qayc6yJXG-8','1_Wpe5nnTPA','mD9i39GENWU','bkTbzmq8uJc','hCebq5lLgOs'];
-        const VIDEO_TITLES = ['The Avett Brothers - I And Love And You','Mumford & Sons - Little Lion Man','The Lumineers - Ho Hey','Of Monsters and Men - Little Talks','Jason Isbell - Cover Me Up','Sturgill Simpson - Turtles All the Way Down','The Head and the Heart - Rivers and Roads','Lord Huron - The Night We Met','Brandi Carlile - The Story','Ryan Adams - When The Stars Go Blue','Tyler Childers - Feathered Indians','Shovels & Rope - Birmingham','The Steel Drivers - If It Hadn\u0027t Been For Love','Whiskey Myers - Stone','Colter Wall - Sleeping on the Blacktop','Shakey Graves - Dearly Departed','Hozier - Take Me to Church','The White Buffalo - The Woods','Ray LaMontagne - Trouble','Trampled by Turtles - Wait So Long','The Devil Makes Three - Old Number Seven','Caamp - By And By','The Wood Brothers - Postcards From Hell','Benjamin Tod - Using Again','The Shins - New Slang','Gregory Alan Isakov - Amsterdam','The Civil Wars - Poison & Wine','Fleet Foxes - White Winter Hymnal','Nathaniel Rateliff - S.O.B.','Dawes - When My Time Comes','The Milk Carton Kids - Michigan','Iron & Wine - Naked As We Came','Bon Iver - Skinny Love','Band of Horses - The Funeral','Mandolin Orange - Wildfire','S. Carey - Fire-Scene','Phosphorescent - Song for Zula','Gillian Welch - Everything Is Free','The Tallest Man on Earth - The Gardener','Mount Moriah - Miracle Temple Holiness','Kacey Musgraves - Follow Your Arrow','Chris Stapleton - Tennessee Whiskey','John Moreland - Cherokee','Courtney Marie Andrews - Rookie Dreaming','Strand of Oaks - Goshen \u002797','Deer Tick - These Old Shoes','Middle Brother - Thanks for Nothing','Hayes Carll - Drunken Poet\u0027s Dream','American Aquarium - I Hope He Breaks Your Heart','The Lone Bellow - Then Came the Morning','Hurray for the Riff Raff - The Body Electric','Langhorne Slim - Changes','Blitzen Trapper - Furr','Dr. Dog - Heart It Races','Bahamas - Lost In the Light','Father John Misty - Real Love Baby','Josh Ritter - Kathleen','First Aid Kit - My Silver Lining','Sierra Ferrell - In Dreams','Margo Price - Hurtin\u0027 (On the Bottle)'];
+        const VIDEO_IDS = ['8AHCfZTRGiI','4m1EFMoRFvY','efq95Pfqt5U','xvaEJzoaYZk','8SjwO17gsqU','ec0XKhAHR5I','1lWJXDG2i0A','oGLKnAvzlg4','rgFQ6WmxdMs','6yP4Nm86yk0','C3uaXCJcRrE','1vrEljMfXYo','l3LFML_pxlY','YwSZvHqf9qM','zSAJ0l4OBHM','v5tr_L31StI','94bdMSCdw20','WM7-PYtXtJM','mfmQe_eBvrc','Xjdkc14-zwQ','gp5JCrSXkJY','eNwARV9tPUw','5P0_v__IOrE','7hx4gdlfamo','zplc4Ienkws','hvKyBcCDOB4','NaUCDqWzy1k','6gBV-Nzq7Pg','4zAThXFOy2c','QB4vok_FMfw','rqR1cjuPXUg','o8pQLtHTPaI','1iAYhQsQhSY','zvCBSSwgtg4','lLJf9qJHR3E','DrQRS40OKNE','ssdgFoHLwnk','EKGHkBComjM','WfzRlcnq_c0','PVjiKRfKpPI','yfySK7CLEEg','DKL4X0PZz7M','RBumgq5yVrA','uJ_1HMAGb4k','VHrLPs3_1Fs','KtlgYxa6BMU','ghb6eDopW8I','DHEOF_rcND8','pTOC_q0NLTk','rGKfrgqWcv0','Wa3lyo_Eowc','c_-cUdmdWgU','xUBYzpCNQ1I','zYwCmcB0XMw','0-7IHOXkiV8','ADP65wbBUpc','P8a4iiOnzsc','yFTvbcNhEgc','2QT5eGHCJdE'];
+        const VIDEO_TITLES = ['Johnny Cash - Hurt','Waylon Jennings - Mammas Don\u0027t Let Your Babies Grow Up to Be Cowboys','Wilco - Jesus Etc.','Steve Earle - Copperhead Road','Emmylou Harris - Pancho and Lefty','Creedence Clearwater Revival - Fortunate Son','Tom Petty - Free Fallin\u0027','Jackson Browne - Running on Empty','Lynyrd Skynyrd - Simple Man','The Allman Brothers Band - Midnight Rider','James Taylor - Fire and Rain','John Denver - Take Me Home Country Roads','Simon & Garfunkel - The Boxer','Bob Dylan - Tangled Up in Blue','America - A Horse with No Name','Gordon Lightfoot - If You Could Read My Mind','Joni Mitchell - Big Yellow Taxi','Fleetwood Mac - Landslide','The Avett Brothers - Kick Drum Heart','Trampled by Turtles - Wait So Long','Buffalo Springfield - For What It\u0027s Worth','Linda Ronstadt - Blue Bayou','Alabama - Mountain Music','Kenny Rogers - The Gambler','Reba McEntire - Fancy','Old Crow Medicine Show - Wagon Wheel','Jason Isbell - Cover Me Up','Sturgill Simpson - Turtles All the Way Down','Chris Stapleton - Tennessee Whiskey','Tyler Childers - Nose on the Grindstone','Colter Wall - The Devil Wears a Suit and Tie','Brandi Carlile - The Story','Nathaniel Rateliff - S.O.B.','The Lumineers - Ho Hey','Mumford & Sons - Little Lion Man','Fleet Foxes - White Winter Hymnal','Bon Iver - Skinny Love','Iron & Wine - Naked As We Came','The Civil Wars - Poison & Wine','Hozier - Take Me to Church','The National - Bloodbuzz Ohio','First Aid Kit - My Silver Lining','Passenger - Let Her Go','Vance Joy - Riptide','George Ezra - Budapest','Lord Huron - The Night We Met','Of Monsters and Men - Little Talks','Edward Sharpe - Home','The Lumineers - Ophelia','Mumford & Sons - I Will Wait','The Tallest Man on Earth - The Gardener','Sufjan Stevens - Chicago','Bright Eyes - First Day of My Life','The Shins - New Slang','Kaleo - Way Down We Go','Ben Howard - Keep Your Head Up','Radical Face - Welcome Home','Angus & Julia Stone - Big Jet Plane','Daughter - Youth'];
         const CLIP_SECONDS = 60.000;
-        const VIDEO_STARTS = [15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0];
+        const VIDEO_STARTS = [15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0,15.0];
         const TITLE_REVEAL_DELAY = 20.000;
         let currentIndex = 0;
         let player = null;
@@ -58,16 +60,24 @@
             s.textContent = `Clip ${cur} / ${total} (each ${Math.round(CLIP_SECONDS)}s)${showTitle && t ? ' — ' + t : ''}`;
             const ov = document.getElementById('overlay');
             ov.innerHTML = `<div># ${cur} / ${total}</div>` + (t ? `<span class="title${showTitle ? '' : ' hidden'}">${t}</span>` : '');
+            // Update YouTube link
+            const ytLink = document.getElementById('ytLink');
+            if (ytLink) {
+                ytLink.href = `https://www.youtube.com/watch?v=${VIDEO_IDS[currentIndex]}&t=${Math.floor(VIDEO_STARTS[currentIndex])}s`;
+            }
         }
 
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('player', {
                 videoId: VIDEO_IDS[currentIndex],
                 playerVars: {
+                    autoplay: 1,
                     rel: 0,
                     modestbranding: 1,
                     controls: 1,
-                    fs: 1
+                    fs: 1,
+                    iv_load_policy: 3,
+                    origin: window.location.origin
                 },
                 events: {
                     'onReady': onPlayerReady,
